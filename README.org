@@ -1,113 +1,62 @@
-#+TITLE: Assignment 1: Pacman
-
-*This is a living document. Activate notifications and follow the project to
-receive updates and corrections*
+#+TITLE: Assignment 2: 3D Pacman
 
 * Introduction
 
-In this assignment each group is going to program a Pacman game in C++ with
-OpenGL. The core concepts needed to achieve this are:
+In this assignment each group is going to program a 3D version of the Pacman
+game developed in Assignment 1. Similarly to Assignment 1, the software need to
+be developed using C++ and OpenGL. In addition to the key concepts used in
+Assingment 1, the core concepts needed to achieve this are:
 
-- Primitive Drawing with OpenGL.
-- Vertex/Fragment shaders with GLSL.
-- Vertex specification with OpenGL.
-- Transformations with OpenGL and glm.
-- Texturing with OpenGL.
-- Window/Context management with GLFW and GLEW.
-- Project generation / build system (e.g., CMake).
+- 3D Object Loading.
+- 3D Geometry.
+- 3D Transformations.
+- Lighting.
 
-The game should follow the conventional gameplay principles of character
-navigation in a maze, collection of pellets along the way and avoiding ghosts.
-
-* Backups
-
-*Keep backups of your repositories to cover for disasters (e.g, GitLab not being
-operational, accidents with repos by the admin or your team-members, etc.)* The
-teaching team won't be responsible for any data loss.
+As in Assignment 1, the game should follow the conventional gameplay principles
+of character navigation in a maze, collection of pellets along the way and
+avoiding ghosts.
 
 * Evaluation
 
-The *deadline* for the assignment is *October 17th 11:59pm* (strict).
+The *deadline* for the assignment is *November 21st 11:59pm* (strict).
 
-This assignment is worth *10%* (all the requirements) of the total grade for the course with up to 5%
-extra points (optional features).
+This assignment is worth *30%* (all the requirements) of the total grade for the
+course.
 
-To be considered for its evaluation, the program must configure (if relevant),
-build and run properly in machines with:
+To be considered for its evaluation, the program must configure, build and run properly using the following technologies:
 
-- Recent compiler (Visual studio 2019 or GCC >= 9.0)
-- Recent OpenGL (>= 4.1)
-- CMake (>= 3.15)
+- Recent compiler (Visual studio 2019 or GCC > 9.0).
+- Recent OpenGL (>= 4.3).
+- If relevant, recent CMake (>= 3.12)
 - Recent GLFW (>= 3.3.2)
-- GLAD
-- C++ >= 11
+- Recent GLEW (>= 2.1.0)
+- GLM (>= 0.9.9.8)
+- C++ >= 11.
 
-Quality of code in terms of efficiency, clarity, modularity and documentation
-will be part of the evaluation.
+In addition to functionality, we will put considerable weight on the professionalism of your solution:
 
-* Assignment submission
+- Modularity: Code should be organised by functionality and reusability, and make use of header files to specify the externally available functionality. Be clear about your decisions, especially whenever your code design deviates from the above-mentioned principles (e.g., for performance/memory reasons, etc.).
+- Versioning: Use proper version practice. Commit early and often. You will work in teams, which makes frequent commits important in order to avoid merge conflicts.
+- Code as documentation: Make your code readable and add comments to clarify its function and purpose.
 
-The submission will be done both through Inspera (*complete details will be
-communicated before the submission deadline*) and through your repository by
-tagging the latest changes before the deadline. Before submission,
-please ensure that your code compiles and runs. We will not review code that
-does not compile! You should provide instructions on how to run in the README
-file that is part of the repository.
+Before submission, please ensure:
 
-* Requirements
+ - your group allocations are up to date at the time of submission
+ - your code compiles and runs. We will not mark code that does not compile! You
+   should provide instructions on how to run in the README file that is part of
+   the forked repository.
 
-** Scenario
+Your program has to provide the following features:
 
-- The program must be able to load the scenario provided in the `levels/level0`
-  file of this repository. In this file 1s refer to walls, 0s refer to tunnels
-  and 2 refer to the initial position of /Pacman/.
+- Read the provided map layout and render it on the screen. Walls should have textures. Feel free to use any texture of choice.
+- Have a Pacman player character that is controlled using the conventional *WASD* keyboard mapping. Pacman should not be able to run through walls.
+- Include collectible pellets. Once collected, the items should disappear from the map.
+- Have moving ghosts. Collition between Pacman and the Ghosts terminates the game.
+- At least one character type (Pacman, ghosts, collectibles) needs to be loaded from a model (e.g., .obj file).
+- Basic lighting model.
+- You can choose to implement the game from a first-person perspective. Alternatively, you can implement a third-person perspective (three-dimensionality needs to be obvious, e.g., don't fix the camera from top to bottom like in Assignment 1)
 
-- The program must display the scenario using the maximum possible area of the
-  window allocated for it *and* respecting the aspect ratio of the map.
+Examples on Pacman 3D:
 
-- The program must display the *tunnel* areas in the same color as the background
-  color (up to the group to choose). The *walls* areas must have a different
-  color than the background (up to the group to choose).
-
-** Pellets
-
-- The program must place and display /pellets/ (pearls or balls) in tunnel
-  areas. The color of the pellets must be different than the colors of the
-  background and walls. Pellets have all the same size, but the shape needs to
-  be symmetrical (e.g, square, diamond, circle);
-
-- Pellets dissapear (visually) when /Pacman/ passes over them.
-
-** Pacman
-
-- The program must place and display a /Pacman/ character that moves *only*
-  inside the tunnel areas (it does not traverse walls). Pacman should be
-  animated using the sprite sheet provided in `assets/pacman.png`.
-
-- Movement of /Pacman/ can be directed by the player using the /arrow keys/ (up,
-  down, left, right). Pacman cannot move outside the map.
-
-** Ghosts
-
-- The program must place and display /Ghosts/ (number of /ghosts/ decided by the
-  group) characters which move *only* inside the /tunnel/ areas (/Ghosts/ do
-  not traverse walls). The movement of the /Ghosts/ can be random throughout the
-  game. The /Ghosts/ should be animated using the sprite sheet provided in
-  `assets/pacman.png`. The initial position of the /ghosts/ should be random.
-
-** Game mechanics
-
-- The game ends when (1) there are no more /pellets/ on the screen or (2) when
-  /pacman/ collides with any of the /Ghosts/. Ending the game will freeze the
-  screen.
-- The application terminates when the user presses the `Escape` key.
-
-** Optional Features
-
- - *Beautiful Pellets:* represent the pellets as cicles with /anti-aliasing/.
- - *Magic Pellets:* make some of the /pellets/ magic by visually increasing
-   the size. The number of magic pellets and their positioning in the map is up
-   to the grouop. When /Pacman/ eats any of these pellets will acquire the power
-   to eat /ghosts/. The /ghosts/ eaten will be removed from the game.
- - *Resizable screen:* make the screen resizable. The content should adapt to
-   fit the screen. Add an option for full-screen.
+- [[https://www.youtube.com/watch?v=vIrFJK6NhCE][https://www.youtube.com/watch?v=vIrFJK6NhCE]]
+- [[https://www.youtube.com/watch?v=IujqngIEdb0]]
