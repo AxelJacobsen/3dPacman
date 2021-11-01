@@ -48,11 +48,17 @@ void    drawGhosts( const GLuint shader);
 void    drawMap(    const GLuint shader, const GLuint vao);
 void    drawPacman( const GLuint shader);
 void    drawPellets(const GLuint shader, const GLuint vao);
-GLfloat getCoordsWithInt(int y,   int x,   int type);
+GLfloat getCoordsWithInt(int y,   int x,   int type, float layer);
 GLuint  getIndices(      int out, int mid, int in);
 GLuint  load_opengl_texture(const std::string& filepath, GLuint slot);
 void    TransformMap(   const GLuint);
 void    TransformPlayer(const GLuint, float lerpProg, float lerpStart[], float lerpStop[]);
+void    applycamera(const GLuint shader);
+
+//Callback functions
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 
 std::vector<std::vector<int>> loadFromFile();
 
@@ -68,13 +74,28 @@ void GLAPIENTRY MessageCallback(GLenum source,
 // -----------------------------------------------------------------------------
 const int spriteSize = 64;
 
-std::vector<float> coords;
+int      width,  height;                    ///< Width and Height kept global due to frequent use in various places      
+int      ghostCount = 1;                   ///< Ammount of ghosts, soft cap at 20 due to processing power
+float    Xshift, Yshift;                    ///< Width and Height of one "square"
+bool     permittPelletUpdate = false,       ///< Reloads Pellet VAO
+         run = true;                        ///< End condition
 
-int      width,  height;                   ///< Width and Height kept global due to frequent use in various places      
-int      ghostCount = 10;                  ///< Ammount of ghosts, soft cap at 20 due to processing power
-float    Xshift, Yshift;                   ///< Width and Height of one "square"
-bool        permittPelletUpdate = false,   ///< Reloads Pellet VAO
-            run = true;                    ///< End condition
+//Mouse implimentation
+// camera
+glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+
+bool firstMouse = true;
+float yaw = -90.0f;	// yaw is initialized to -90.0 degrees since a yaw of 0.0 results in a direction vector pointing to the right so we initially rotate a bit to the left.
+float pitch = 0.0f;
+float lastX = 0;
+float lastY = 0;
+float fov = 45.0f;
+
+// timing
+float deltaTime = 0.0f;	// time between current frame and last frame
+float lastFrame = 0.0f;
 
 // -----------------------------------------------------------------------------
 // Classes
@@ -89,6 +110,7 @@ private:
     //Shared Values
     float   lerpStart[2],               //Contains start coords of LERP
             lerpStop[2],                //Contains stop  coords of LERP 
+            surround[3][3][2],          //Coords for surrounding walls
             speedDiv = 10.0f,           //Higher number = slower speed
             lerpStep = 1.0f/speedDiv,   //Speed of LERP, also slowed by frequency in main
             lerpProg = lerpStep;        //defines progress as step to avoid hickups
@@ -110,7 +132,8 @@ private:
     void characterInit();
     void convertToVert();
 public:
-    std::vector<std::vector<int>> mapH; //Holds the level0 map in Pacman[0]
+    std::vector<std::vector<int>>   mapI; //Holds the level0 map in Pacman[0]
+    std::vector<std::vector<float>> mapF; //Holds the level0 map coordinates in Pacman[0]
     Character() {};
     Character(int x, int y);
     Character(int x, int y, bool ai);
@@ -130,7 +153,8 @@ public:
     bool checkGhostCollision();
     void characterAnimate(float hMin, float wMin, float hMax, float wMax);
     void pacAnimate();
-    void recieveMap(std::vector<std::vector<int>> lvlVect);
+    void recieveMapInt(std::vector<std::vector<int>> lvlVectInt);
+    void recieveMapfloat(float coord, int Y);
     int  getMapVal(int x, int y);
     //AI functions
     int   getRandomAIdir();
@@ -182,7 +206,7 @@ GLuint compileVertices(std::vector<Character*> itObj);
  *  @see      Character::characterInit();
  */
 Character::Character(int x, int y) {
-    dir = 9, prevDir = 9;
+    dir = 9, prevDir = dir;
     XYpos[0] = x, XYpos[1] = y;
     characterInit();
 };
@@ -251,7 +275,7 @@ void Character::convertToVert() {
     int loop = 0, callCount = 0;
     for (int y = 0; y < 4; y++) {
         for (int x = 0; x < 3; x++) {
-            vertices[loop] = (getCoordsWithInt(XYpos[1], XYpos[0], callCount));
+            vertices[loop] = (getCoordsWithInt(XYpos[1], XYpos[0], callCount, 0.2));
             loop++; callCount++;
         }
         loop += 2;
@@ -310,7 +334,7 @@ void Character::changeDir() {
         AIdelay--;
         legal = getLegalDir(dir);
     }
-
+    if (prevDir == 0) { prevDir = dir; }
     if (legal && (dir % prevDir == 0) && dir != prevDir && !AI) {   //Incase you are trying to turn 180 degrees this procs
         float coordHolder[2];
         coordHolder[0] = lerpStop[0];      coordHolder[1] = lerpStop[1];
@@ -453,10 +477,17 @@ void Character::pacAnimate() {
 }
 
 /**
- *  Recieves lvlVect int Pacman[0]
+ *  Recieves lvlVect in to Pacman[0]
  */
-void Character::recieveMap(std::vector<std::vector<int>> lvlVect) {
-    mapH = lvlVect;
+void Character::recieveMapInt(std::vector<std::vector<int>> lvlVectInt) {
+    mapI = lvlVectInt;
+};
+
+/**
+ *  Recieves lvlVect float in to Pacman[0]
+ */
+void Character::recieveMapfloat(float coord, int Y) {
+    mapF[Y].push_back(coord);
 };
 
 /**
@@ -465,7 +496,7 @@ void Character::recieveMap(std::vector<std::vector<int>> lvlVect) {
  *  @return returns if coord is wall or not
  */
 int Character::getMapVal(int x, int y) {
-    return mapH[x][y];
+    return mapI[x][y];
 };
 
 /**
@@ -594,7 +625,7 @@ void Pellet::initCoords() {
     float Yquart = Yshift / 3.0f;
     for (int y = 0; y < 4; y++) {
         for (int x = 0; x < 3; x++) {
-            vertices[loop] = (getCoordsWithInt(XYpos[1], XYpos[0], loop));
+            vertices[loop] = (getCoordsWithInt(XYpos[1], XYpos[0], loop, 0.1f));
             switch (loop) {
             case 0:  vertices[loop] += Xquart; break;
             case 1:  vertices[loop] += Yquart; break;
@@ -651,21 +682,6 @@ int Pellet::checkCoords(int XY) {
 }
 
 // -----------------------------------------------------------------------------
-// Key Callsback
-// -----------------------------------------------------------------------------
-static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-    if (action == GLFW_PRESS){
-        switch (key) {
-        case GLFW_KEY_UP:           if (Pacman[0]->getLegalDir(2)) { Pacman[0]->updateDir(2); Pacman[0]->changeDir(); };  break;
-        case GLFW_KEY_DOWN:         if (Pacman[0]->getLegalDir(4)) { Pacman[0]->updateDir(4); Pacman[0]->changeDir(); };  break;
-        case GLFW_KEY_LEFT:         if (Pacman[0]->getLegalDir(3)) { Pacman[0]->updateDir(3); Pacman[0]->changeDir(); };  break;
-        case GLFW_KEY_RIGHT:        if (Pacman[0]->getLegalDir(9)) { Pacman[0]->updateDir(9); Pacman[0]->changeDir(); };  break;
-        }
-    }
-}
-
-// -----------------------------------------------------------------------------
 // ENTRY POINT
 // -----------------------------------------------------------------------------
 /**
@@ -701,6 +717,8 @@ int main()
     auto window = glfwCreateWindow(width * spriteSize / resize, height * spriteSize / resize, "Pacman", nullptr, nullptr);
 
     glfwSetKeyCallback(window, key_callback);
+    glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
     if (window == nullptr)
     {
@@ -740,7 +758,7 @@ int main()
     auto ghostShaderProgram  = CompileShader(  ghostVertexShaderSrc,
                                                ghostFragmentShaderSrc);
     
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    //glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glEnable(GL_MULTISAMPLE);
 
     //Texture loading
@@ -751,17 +769,23 @@ int main()
     glfwSetTime(0.0);
     float frequency = 0.01f;
     int animDelay = 10;
-    
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
+        // per-frame time logic
+        // --------------------
+        
         //int Xwidth, Yheight;
         //glfwGetFramebufferSize(window, &Xwidth, &Yheight);
 
         //glViewport(0,0, Xwidth, Yheight); //Can be uncommented to permit screen stretching
 
         currentTime = glfwGetTime();
+
+        deltaTime = currentTime - lastFrame;
+        lastFrame = currentTime;
+
         glClear(GL_COLOR_BUFFER_BIT);
         
         // Draw Objects
@@ -894,6 +918,7 @@ GLuint load_opengl_texture(const std::string& filepath, GLuint slot)
 void drawMap(const GLuint shader, const GLuint vao) {
     int numElements = (6 * (width * height) - Pellets.size() - 1);
     auto mapVertexColorLocation = glGetUniformLocation(shader, "u_Color");
+    applycamera(shader);
     glUseProgram(shader);
     glBindVertexArray(vao);
     glUniform4f(mapVertexColorLocation, 0.1f, 0.0f, 0.6f, 1.0f);
@@ -907,6 +932,7 @@ void drawMap(const GLuint shader, const GLuint vao) {
  */
 void drawPellets(const GLuint shader, const GLuint vao) {
     auto pelletVertexColorLocation = glGetUniformLocation(shader, "u_Color");
+    applycamera(shader);
     glUseProgram(shader);
     glBindVertexArray(vao);
     glUniform4f(pelletVertexColorLocation, 0.8f, 0.8f, 0.0f, 1.0f);
@@ -930,6 +956,7 @@ void drawGhosts(const GLuint shader) {
 
     auto ghostVertexColorLocation = glGetUniformLocation(shader, "gColor");
     auto ghostTextureLocation = glGetUniformLocation(shader, "g_GhostTexture");
+    applycamera(shader);
     glUseProgram(shader);
     glBindVertexArray(ghostVAO);
     glUniform1i(ghostTextureLocation, 1);
@@ -958,12 +985,31 @@ void drawPacman(const GLuint shader) {
     glVertexAttribPointer(ptexAttrib, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
 
     auto playerTextureLocation = glGetUniformLocation(shader, "u_PlayerTexture");
+
+    applycamera(shader);
     glUseProgram(shader);
+
     glBindVertexArray(playerVAO);
     glUniform1i(playerTextureLocation, 0);
     Pacman[0]->Transform(shader);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (const void*)0);
     CleanVAO(playerVAO);
+}
+
+/**
+ *  Applies camera tranformation
+ */
+void applycamera(const GLuint shader) {
+
+    // pass projection matrix to shader (note that in this case it could change every frame)
+    glm::mat4 projection = glm::perspective(glm::radians(fov), (float)(width * spriteSize / 3) / (float)(height * spriteSize / 3), 0.1f, 100.0f);
+    GLuint projMat = glGetUniformLocation(shader, "projection");
+    glUniformMatrix4fv(projMat, 1, false, glm::value_ptr(projection));
+
+    // camera/view transformation
+    glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+    GLuint viewMat = glGetUniformLocation(shader, "view");
+    glUniformMatrix4fv(viewMat, 1, false, glm::value_ptr(view));
 }
 
 // -----------------------------------------------------------------------------
@@ -1105,7 +1151,7 @@ void callMapCoordinateCreation(std::vector<std::vector<int>> levelVect, std::vec
                 int loop = 0;
                 for (int inner = 0; inner < 4; inner++) {
                     for (int outer = 0; outer < 3; outer++) {
-                        float temp = getCoordsWithInt(i, j, loop);
+                        float temp = getCoordsWithInt(i, j, loop, 0.0f);
                         (*map).push_back(temp);
                         loop++;
                     }
@@ -1113,7 +1159,7 @@ void callMapCoordinateCreation(std::vector<std::vector<int>> levelVect, std::vec
             }
             else if (levelVect[i][j] == 2) {
                 Pacman.push_back(new Character(j, i));
-                Pacman[0]->recieveMap(levelVect);
+                Pacman[0]->recieveMapInt(levelVect);
             }
             else { hallCount++;  Pellets.push_back(new Pellet(j, i)); }
         }
@@ -1158,7 +1204,7 @@ void callMapCoordinateCreation(std::vector<std::vector<int>> levelVect, std::vec
  *
  *  @return returns float for correct coord
  */
-GLfloat getCoordsWithInt(int y, int x, int loop) {
+GLfloat getCoordsWithInt(int y, int x, int loop, float layer) {
     Xshift = 2.0f / (float(width));
     Yshift = 2.0f / (float(height));
     GLfloat tempXs, tempYs;
@@ -1177,7 +1223,7 @@ GLfloat getCoordsWithInt(int y, int x, int loop) {
 
     case 9:   tempXs += Xshift;   return (tempXs - 1.0f);  // Top Right
     case 10:  tempYs;             return (tempYs - 1.0f);  // Top Right
-    default: return 0.0f;
+    default: return 0;
     }
 };
 
@@ -1316,4 +1362,74 @@ MessageCallback(GLenum source,
         "type = 0x" << type <<
         ", severity = 0x" << severity <<
         ", message =" << message << "\n";
+}
+
+// -----------------------------------------------------------------------------
+// Callback Functions
+// -----------------------------------------------------------------------------
+void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+{
+    if (firstMouse)
+    {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
+    lastX = xpos;
+    lastY = ypos;
+
+    float sensitivity = 0.1f; // change this value to your liking
+    xoffset *= sensitivity;
+    yoffset *= sensitivity;
+
+    yaw += xoffset;
+    pitch += yoffset;
+
+    // make sure that when pitch is out of bounds, screen doesn't get flipped
+    if (pitch > 89.0f)
+        pitch = 89.0f;
+    if (pitch < -89.0f)
+        pitch = -89.0f;
+
+    glm::vec3 front;
+    front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+    front.y = sin(glm::radians(pitch));
+    front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+    cameraFront = glm::normalize(front);
+}
+
+void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+{
+    // make sure the viewport matches the new window dimensions; note that width and 
+    // height will be significantly larger than specified on retina displays.
+    glViewport(0, 0, width, height);
+}
+
+static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    if (action == GLFW_PRESS) {
+        float cameraSpeed = 2.5 * deltaTime;
+        switch (key) {
+        case GLFW_KEY_W:        if (Pacman[0]->getLegalDir(2)) {
+            Pacman[0]->updateDir(2); Pacman[0]->changeDir();
+            cameraPos += cameraSpeed * cameraFront;
+        };  break;
+        case GLFW_KEY_S:        if (Pacman[0]->getLegalDir(4)) {
+            Pacman[0]->updateDir(4); Pacman[0]->changeDir();
+            cameraPos -= cameraSpeed * cameraFront;
+        };  break;
+        case GLFW_KEY_A:        if (Pacman[0]->getLegalDir(3)) {
+            Pacman[0]->updateDir(3); Pacman[0]->changeDir();
+            cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+        };  break;
+        case GLFW_KEY_D:        if (Pacman[0]->getLegalDir(9)) {
+            Pacman[0]->updateDir(9); Pacman[0]->changeDir();
+            cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+        };  break;
+        }
+        printf("%f\t%f\t%f\n", cameraPos[0], cameraPos[1], cameraPos[2]);
+    }
 }
