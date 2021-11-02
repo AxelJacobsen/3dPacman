@@ -74,7 +74,7 @@ void GLAPIENTRY MessageCallback(GLenum source,
 // -----------------------------------------------------------------------------
 const int spriteSize = 64;
 
-int      width,  height;                    ///< Width and Height kept global due to frequent use in various places      
+int      width,  height;                    ///< Width and Height kept global due to frequent use in various places
 int      ghostCount = 1;                   ///< Ammount of ghosts, soft cap at 20 due to processing power
 float    Xshift, Yshift;                    ///< Width and Height of one "square"
 bool     permittPelletUpdate = false,       ///< Reloads Pellet VAO
@@ -82,7 +82,7 @@ bool     permittPelletUpdate = false,       ///< Reloads Pellet VAO
 
 //Mouse implimentation
 // camera
-glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 1.0f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
@@ -109,7 +109,7 @@ class Character {
 private:
     //Shared Values
     float   lerpStart[2],               //Contains start coords of LERP
-            lerpStop[2],                //Contains stop  coords of LERP 
+            lerpStop[2],                //Contains stop  coords of LERP
             surround[3][3][2],          //Coords for surrounding walls
             speedDiv = 10.0f,           //Higher number = slower speed
             lerpStep = 1.0f/speedDiv,   //Speed of LERP, also slowed by frequency in main
@@ -118,11 +118,11 @@ private:
     int     dir,                        //Direction character is heading
             prevDir,                    //Previous direction character was heading
             XYpos[2],                   //Value of characters current XY
-            animVal = 0;                //A number between 0 - 3 used to define 
+            animVal = 0;                //A number between 0 - 3 used to define
 
     bool    animFlip = true;            //For ghosts flipflops between frames for pac decides which direction to animate
     GLfloat vertices[4 * 5] = { 0.0f }; //Holds character vertices,  X Y Z T1 T2
-    
+
 
     //AI values
     bool    AI = false;                 //Decides whether object is pacman or ghost
@@ -137,7 +137,7 @@ public:
     Character() {};
     Character(int x, int y);
     Character(int x, int y, bool ai);
-    ~Character() {  delete vertices; 
+    ~Character() {  delete vertices;
                     delete XYpos;
                     delete lerpStart;
                     delete lerpStop;};
@@ -171,17 +171,21 @@ public:
 class Pellet {
 private:
     int     XYpos[2];                   //Pellets XY
+    const int pVerticeAmmount = 4 * 3;
     bool    enabled = true;             //Decides whether to do collision or not
     GLfloat vertices[4 * 3] = { 0.0f }; //Hold pellets vertices X Y Z
 public:
     Pellet() {};
     Pellet(int x, int y);
-    ~Pellet() { delete vertices; 
+    ~Pellet() {
+                printf("Deconstructor called\n");
+                delete vertices;
                 delete XYpos; };
     void initCoords();
     GLfloat getVertCoord(int index);
     void removePellet();
     int checkCoords(int XY);
+    bool isEnabled();
 };
 
 //Container definition
@@ -235,7 +239,7 @@ Character::Character(int x, int y, bool ai) {
  *  @see      Character:: pacAnimate();
  *  @see      Character:: AIanimate();
  */
-void Character::characterInit() { 
+void Character::characterInit() {
     convertToVert();
     lerpStart[0] = vertices[0];
     lerpStart[1] = vertices[1];
@@ -263,7 +267,7 @@ void Character::characterInit() {
     else {
         AIanimate();
     }
-    
+
 }
 
 /**
@@ -322,7 +326,7 @@ void Character::getLerpCoords() {
 
 /**
  *  Handles direction change requests
- * 
+ *
  *  @see      Character:: getRandomAIdir();
  *  @see      Character:: getLegalDir(int dir);
  *  @see      Character:: getLerpCoords();
@@ -406,12 +410,21 @@ GLfloat Character::getVertCoord(int index) {
  *  @see      Pellets:: removePellet();
  */
 void Character::checkPellet() {
-    for (auto& it : Pellets) {
+    int test = 0;
+    //for (auto & it : Pellets) {
+    for (auto it = Pellets.begin(); it != Pellets.end(); ++it){
+
         int check = 0;
         for (int i = 0; i < 2; i++) {
-            if (XYpos[i] == it->checkCoords(i)) { check++; }
+            if (XYpos[i] == (*it)->checkCoords(i) && (*it)->isEnabled()) { check++; }
         }
-        if (check == 2) { it->removePellet(); }
+        if (check == 2) {
+            printf("Slett #%i\n", test);
+            (*it)->removePellet();
+            //Pellets.erase(it);
+            break;
+        }
+        test++;
     }
 };
 
@@ -552,7 +565,7 @@ void Character::AIupdateVertice() {
 
 /**
  *  Returns the AIs lerpProg
- * 
+ *
  *  @return   AI lerpProg
  */
 float Character::AIgetLerpPog() {
@@ -578,14 +591,14 @@ void Character::AIanimate() {
     float hMod = (1.0f / 4.0f);
     float mhMod = hMod, mwMod = wMod;
     if (!animFlip) {
-        animFlip = true; 
-        animVal = 1; 
+        animFlip = true;
+        animVal = 1;
         wMod   *= 5;
         mwMod   = 1.0f;
     }
     else {
-        animFlip = false; 
-        animVal = 0; 
+        animFlip = false;
+        animVal = 0;
         wMod   *= 4;
         mwMod  *= 5;
     }
@@ -650,9 +663,9 @@ void Pellet::initCoords() {
  */
 void Pellet::removePellet() {
     if (enabled) {
-        for (int i = 0; i < 12; i++) {
-            vertices[i] = 0.0f;
-        }
+        //for (int i = 0; i < 12; i++) {
+        //    vertices[i] = 0.0f;
+        //}
         enabled = false;
         permittPelletUpdate = true;
     }
@@ -662,7 +675,7 @@ void Pellet::removePellet() {
  *  Returns desired vertex from pellet
  *
  *  @param    index - desired vertex
- * 
+ *
  *  @return   pellets desired vertex
  */
 GLfloat Pellet::getVertCoord(int index) {
@@ -673,12 +686,21 @@ GLfloat Pellet::getVertCoord(int index) {
  *  Returns XYpos if pellet is enabled
  *
  *  @param    XY - either x or y
- * 
+ *
  *  @return either pellet XY or -1 if disabled
  */
 int Pellet::checkCoords(int XY) {
     if (enabled) return XYpos[XY];
     return -1;
+}
+
+/**
+ *  Returns if pellet is enabled
+ *
+ *  @return if the pellet is enabeled or not
+ */
+bool Pellet::isEnabled() {
+    return enabled;
 }
 
 // -----------------------------------------------------------------------------
@@ -690,13 +712,13 @@ int Pellet::checkCoords(int XY) {
 int main()
 {
     int collected = 0,  //collected pellet counter
-        resize = 3;     //resizes window initially 
+        resize = 3;     //resizes window initially
     std::vector<std::vector<int>> levelVect = loadFromFile();
     std::vector<GLfloat> map;
 
     // Creates coordinates for map
     callMapCoordinateCreation(levelVect, &map);
-    
+
 
     // Initialization of GLFW
     if (!glfwInit())
@@ -720,6 +742,9 @@ int main()
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
+
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
     if (window == nullptr)
     {
         std::cerr << "GLFW failed on window creation." << '\n';
@@ -742,7 +767,7 @@ int main()
 
     auto playerShaderProgram = CompileShader(  playerVertexShaderSrc,
                                                playerFragmentShaderSrc);
-    
+
     GLint pposAttrib = glGetAttribLocation(playerShaderProgram, "pPosition");
     glEnableVertexAttribArray(pposAttrib);
     glVertexAttribPointer(pposAttrib, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), 0);
@@ -757,8 +782,8 @@ int main()
 
     auto ghostShaderProgram  = CompileShader(  ghostVertexShaderSrc,
                                                ghostFragmentShaderSrc);
-    
-    //glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glEnable(GL_MULTISAMPLE);
 
     //Texture loading
@@ -767,32 +792,24 @@ int main()
 
     double currentTime = 0.0;
     glfwSetTime(0.0);
-    float frequency = 0.01f;
+    float frequency = currentTime;
+    float delay = 0.015f;
     int animDelay = 10;
+
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
-
-        // per-frame time logic
-        // --------------------
-        
-        //int Xwidth, Yheight;
-        //glfwGetFramebufferSize(window, &Xwidth, &Yheight);
-
-        //glViewport(0,0, Xwidth, Yheight); //Can be uncommented to permit screen stretching
-
+        glClear(GL_COLOR_BUFFER_BIT);
         currentTime = glfwGetTime();
 
         deltaTime = currentTime - lastFrame;
         lastFrame = currentTime;
 
-        glClear(GL_COLOR_BUFFER_BIT);
-        
-        // Draw Objects
-        drawMap(mapShaderProgram, mapVAO);
-        drawPellets(pelletShaderProgram, pelletVAO);
-        drawPacman(playerShaderProgram);
-        drawGhosts(ghostShaderProgram);
+        //Draw calls
+        drawMap(    mapShaderProgram,       mapVAO);
+        drawPellets(pelletShaderProgram,    pelletVAO);
+        drawPacman( playerShaderProgram);
+        drawGhosts( ghostShaderProgram);
 
         // Reloads pellets after consumption
         if (permittPelletUpdate) {
@@ -806,13 +823,14 @@ int main()
         }
 
         //Update all Lerps
-        if (currentTime > frequency && run) {
+
+        if (currentTime > (frequency+delay) && run) {
+            frequency = currentTime;
             bool animate = false;
 
             if (animDelay == 0) { animate = true; animDelay = 3; }  //the effective speed of animation
             else { animDelay--; }
 
-            glfwSetTime(0.0);
             Pacman[0]->updateLerp();
 
             if (animate) Pacman[0]->pacAnimate();
@@ -821,9 +839,9 @@ int main()
                 if (animate) ghostIt->AIanimate();
             }
             if (Pacman[0]->checkGhostCollision()) { run = false; }
-        }
 
-        glfwSwapBuffers(window);
+            glfwSwapBuffers(window);
+        }
 
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
             break;
@@ -911,15 +929,15 @@ GLuint load_opengl_texture(const std::string& filepath, GLuint slot)
 // -----------------------------------------------------------------------------
 /**
  *  Draws map
- * 
+ *
  *  @param shader - shaderprogram to use for drawing
  *  @param vao    - vao of object
  */
 void drawMap(const GLuint shader, const GLuint vao) {
     int numElements = (6 * (width * height) - Pellets.size() - 1);
     auto mapVertexColorLocation = glGetUniformLocation(shader, "u_Color");
-    applycamera(shader);
     glUseProgram(shader);
+    applycamera(shader);
     glBindVertexArray(vao);
     glUniform4f(mapVertexColorLocation, 0.1f, 0.0f, 0.6f, 1.0f);
     glDrawElements(GL_TRIANGLES, numElements, GL_UNSIGNED_INT, (const void*)0);
@@ -932,8 +950,8 @@ void drawMap(const GLuint shader, const GLuint vao) {
  */
 void drawPellets(const GLuint shader, const GLuint vao) {
     auto pelletVertexColorLocation = glGetUniformLocation(shader, "u_Color");
-    applycamera(shader);
     glUseProgram(shader);
+    applycamera(shader);
     glBindVertexArray(vao);
     glUniform4f(pelletVertexColorLocation, 0.8f, 0.8f, 0.0f, 1.0f);
     glDrawElements(GL_TRIANGLES, int(6 * Pellets.size()), GL_UNSIGNED_INT, (const void*)0);
@@ -942,22 +960,21 @@ void drawPellets(const GLuint shader, const GLuint vao) {
  *  Draws Ghost
  *
  *  @param shader - shaderprogram to use for drawing
- * 
+ *
  *  @see compileVertices(std::vector<Character*> itObj)
  *  @see CleanVAO(GLuint& vao)
  */
 void drawGhosts(const GLuint shader) {
 
     auto ghostVAO = compileVertices(Ghosts);
-
     GLuint gtexAttrib = glGetAttribLocation(shader, "gTexcoord");
     glEnableVertexAttribArray(gtexAttrib);
     glVertexAttribPointer(gtexAttrib, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
 
     auto ghostVertexColorLocation = glGetUniformLocation(shader, "gColor");
     auto ghostTextureLocation = glGetUniformLocation(shader, "g_GhostTexture");
-    applycamera(shader);
     glUseProgram(shader);
+    applycamera(shader);
     glBindVertexArray(ghostVAO);
     glUniform1i(ghostTextureLocation, 1);
 
@@ -986,12 +1003,12 @@ void drawPacman(const GLuint shader) {
 
     auto playerTextureLocation = glGetUniformLocation(shader, "u_PlayerTexture");
 
-    applycamera(shader);
     glUseProgram(shader);
 
     glBindVertexArray(playerVAO);
     glUniform1i(playerTextureLocation, 0);
     Pacman[0]->Transform(shader);
+    applycamera(shader);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (const void*)0);
     CleanVAO(playerVAO);
 }
@@ -1007,7 +1024,7 @@ void applycamera(const GLuint shader) {
     glUniformMatrix4fv(projMat, 1, false, glm::value_ptr(projection));
 
     // camera/view transformation
-    glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+    glm::mat4 view = glm::lookAt(cameraPos, (cameraPos + cameraFront), cameraUp);
     GLuint viewMat = glGetUniformLocation(shader, "view");
     glUniformMatrix4fv(viewMat, 1, false, glm::value_ptr(view));
 }
@@ -1016,12 +1033,12 @@ void applycamera(const GLuint shader) {
 //  INITIALIZE OBJECT
 // -----------------------------------------------------------------------------
 /**
- *  Creates object 
+ *  Creates object
  *
  *  @param object    - pointer to object to be created
  *  @param size      - size of object
  *  @param stride    - stride used in object
- * 
+ *
  *  @return     returns vao
  */
 GLuint CreateObject(GLfloat* object, int size, const int stride)
@@ -1069,9 +1086,9 @@ GLuint CreateObject(GLfloat* object, int size, const int stride)
  *
  *  @param *map       - pointer to map vector
  *  @param *mapObje   - pointer to first item in map vector, easier to work with this
- * 
+ *
  *  @see GLuint getIndices(int out, int mid, int in)
- * 
+ *
  *  @return returns vao of map
  */
 GLuint CreateMap(std::vector<GLfloat> * map, GLfloat *mapObj) {
@@ -1171,7 +1188,7 @@ void callMapCoordinateCreation(std::vector<std::vector<int>> levelVect, std::vec
     do {
         for (int g = 0; g < ghostCount; g++) {
             int randPos;
-            
+
             randPos = (rand() % hallCount);
             formerPositions.push_back(randPos);
         }
@@ -1228,7 +1245,7 @@ GLfloat getCoordsWithInt(int y, int x, int loop, float layer) {
 };
 
 /**
- *  Returns indice 
+ *  Returns indice
  *
  *  @param out  -   outer  for loop value "o"
  *  @param mid  -   middle for loop value "m"
@@ -1272,18 +1289,20 @@ std::vector<std::vector<int>> loadFromFile() {
  *  Compiles all Pellet verticie lists into a large vector and calls CreateObject
  *
  *  @param itObj - which type of object to iterate, here always pellet
- * 
+ *
  *  @see Pellet::getVertCoord(int index);
  *  @see GLuint CreateObject(GLfloat* object, int size, const int stride);
- * 
+ *
  *  @return returns VAO gotten from CreateObject func
  */
 GLuint compileVertices(std::vector<Pellet*> itObj) {
     std::vector<GLfloat> veticieList;
     int stride = 3;
     for (auto & it : itObj) {
-        for (int i = 0; i < 12; i++) {
-            veticieList.push_back(it->getVertCoord(i));
+        if (it->isEnabled()){
+            for (int i = 0; i < 12; i++) {
+                veticieList.push_back(it->getVertCoord(i));
+            }
         }
     }
     return CreateObject(&veticieList[0], veticieList.size()*sizeof(veticieList[0]), stride);
@@ -1403,7 +1422,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
-    // make sure the viewport matches the new window dimensions; note that width and 
+    // make sure the viewport matches the new window dimensions; note that width and
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
 }

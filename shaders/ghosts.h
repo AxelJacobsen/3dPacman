@@ -10,22 +10,18 @@ static const std::string ghostVertexShaderSrc = R"(
 out vec2 vsTexcoord;
 
 /** Locations */
-layout(location = 0) in vec3 a_Position;
+layout(location = 0) in vec3 g_Position;
 layout(location = 1) in vec2 gTexcoord;
 
-uniform mat4 model;
+//We specify our uniforms. We do not need to specify locations manually, but it helps with knowing what is bound where.
 uniform mat4 view;
 uniform mat4 projection;
-
-//We specify our uniforms. We do not need to specify locations manually, but it helps with knowing what is bound where.
-layout(location=0) uniform mat4 u_TransformationMat = mat4(1);
-
 
 void main()
 {
 vsTexcoord = gTexcoord;
 //We multiply our matrices with our position to change the positions of vertices to their final destinations.
-gl_Position = u_TransformationMat * vec4(a_Position, 1.0f);
+gl_Position = view * vec4(g_Position, 1.0f);
 }
 )";
 

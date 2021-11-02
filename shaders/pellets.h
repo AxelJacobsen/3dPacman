@@ -6,11 +6,9 @@
 static const std::string pelletVertexShaderSrc = R"(
 #version 430 core
 
-layout(location = 0) in vec3 a_Position;
+layout(location = 0) in vec3 p_Position;
 
 //We specify our uniforms. We do not need to specify locations manually, but it helps with knowing what is bound where.
-layout(location=0) uniform mat4 u_TransformationMat = mat4(1);
-uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
@@ -18,7 +16,7 @@ uniform mat4 projection;
 void main()
 {
 //We multiply our matrices with our position to change the positions of vertices to their final destinations.
-gl_Position = view * u_TransformationMat * vec4(a_Position, 1.0f);
+gl_Position = view * vec4(p_Position, 1.0f);
 }
 )";
 
