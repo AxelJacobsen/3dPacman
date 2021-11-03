@@ -10,7 +10,6 @@ static const std::string playerVertexShaderSrc = R"(
 in vec3 pPosition;
 in vec2 pTexcoord;
 
-uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
@@ -25,7 +24,7 @@ void main()
 //Pass the color and texture data for the fragment shader
 vsTexcoord = pTexcoord;
 //We multiply our matrices with our position to change the positions of vertices to their final destinations.
-gl_Position = u_TransformationMat * vec4(pPosition, 1.0f);
+gl_Position = view * u_TransformationMat * vec4(pPosition, 1.0f);
 }
 )";
 
