@@ -80,26 +80,16 @@ void GLAPIENTRY MessageCallback(GLenum source,
 const int spriteSize = 64;
 
 int      width,  height;                    ///< Width and Height kept global due to frequent use in various places
-<<<<<<< HEAD
 int      ghostCount = 0;                   ///< Ammount of ghosts, soft cap at 20 due to processing power
-=======
-int      ghostCount = 1;                   ///< Ammount of ghosts, soft cap at 20 due to processing power
->>>>>>> eec188cf8349e8cd95d0cafb7b31a54e5e1ac4e3
 float    Xshift, Yshift;                    ///< Width and Height of one "square"
 bool     permittPelletUpdate = false,       ///< Reloads Pellet VAO
          run = true;                        ///< End condition
 
 //Mouse implimentation
 // camera
-<<<<<<< HEAD
 glm::vec3 cameraPos = glm::vec3(-1.0f, 0.0f, 0.6f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, 0.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 0.0f, 1.0f);
-=======
-glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 1.0f);
-glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
->>>>>>> eec188cf8349e8cd95d0cafb7b31a54e5e1ac4e3
 
 bool firstMouse = true;
 float yaw =   0.0f;	// yaw is initialized to -90.0 degrees since a yaw of 0.0 results in a direction vector pointing to the right so we initially rotate a bit to the left.
@@ -193,10 +183,6 @@ public:
     Pellet() {};
     Pellet(int x, int y);
     ~Pellet() {
-<<<<<<< HEAD
-=======
-                printf("Deconstructor called\n");
->>>>>>> eec188cf8349e8cd95d0cafb7b31a54e5e1ac4e3
                 delete vertices;
                 delete XYpos; };
     void initCoords();
@@ -285,10 +271,6 @@ void Character::characterInit() {
     else {
         AIanimate();
     }
-<<<<<<< HEAD
-=======
-
->>>>>>> eec188cf8349e8cd95d0cafb7b31a54e5e1ac4e3
 }
 
 /**
@@ -432,7 +414,6 @@ GLfloat Character::getVertCoord(int index) {
  */
 void Character::checkPellet() {
     int test = 0;
-<<<<<<< HEAD
     for (auto & it : Pellets) {
 
         int check = 0;
@@ -444,21 +425,6 @@ void Character::checkPellet() {
             //Pellets.erase(it);
             break;
         }
-=======
-    //for (auto & it : Pellets) {
-    for (auto it = Pellets.begin(); it != Pellets.end(); ++it){
-
-        int check = 0;
-        for (int i = 0; i < 2; i++) {
-            if (XYpos[i] == (*it)->checkCoords(i) && (*it)->isEnabled()) { check++; }
-        }
-        if (check == 2) {
-            printf("Slett #%i\n", test);
-            (*it)->removePellet();
-            //Pellets.erase(it);
-            break;
-        }
->>>>>>> eec188cf8349e8cd95d0cafb7b31a54e5e1ac4e3
         test++;
     }
 };
@@ -627,7 +593,6 @@ void Character::AIanimate() {
     float mhMod = hMod, mwMod = wMod;
     if (!animFlip) {
         animFlip = true;
-<<<<<<< HEAD
         animVal  = 1;
         wMod    *= 5;
         mwMod    = 1.0f;
@@ -637,17 +602,6 @@ void Character::AIanimate() {
         animVal  = 0;
         wMod    *= 4;
         mwMod   *= 5;
-=======
-        animVal = 1;
-        wMod   *= 5;
-        mwMod   = 1.0f;
-    }
-    else {
-        animFlip = false;
-        animVal = 0;
-        wMod   *= 4;
-        mwMod  *= 5;
->>>>>>> eec188cf8349e8cd95d0cafb7b31a54e5e1ac4e3
     }
     switch (dir) {
         case 2: hMod *= 1; mhMod *= 2; break;   //UP
@@ -710,9 +664,9 @@ void Pellet::initCoords() {
  */
 void Pellet::removePellet() {
     if (enabled) {
-        //for (int i = 0; i < 12; i++) {
-        //    vertices[i] = 0.0f;
-        //}
+        for (int i = 0; i < 12; i++) {
+            vertices[i] = 0.0f;
+        }
         enabled = false;
         permittPelletUpdate = true;
     }
@@ -759,11 +713,7 @@ bool Pellet::isEnabled() {
 int main()
 {
     int collected = 0,  //collected pellet counter
-<<<<<<< HEAD
         resize    = 3;  //resizes window initially
-=======
-        resize = 3;     //resizes window initially
->>>>>>> eec188cf8349e8cd95d0cafb7b31a54e5e1ac4e3
     std::vector<std::vector<int>> levelVect = loadFromFile();
     std::vector<GLfloat> map;
 
@@ -847,7 +797,6 @@ int main()
     float delay = 0.015f;
     int animDelay = 10;
 
-
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
         glClear(GL_COLOR_BUFFER_BIT);
@@ -855,7 +804,6 @@ int main()
 
         deltaTime = currentTime - lastFrame;
         lastFrame = currentTime;
-<<<<<<< HEAD
         if (run){
             //Draw calls
             drawPellets(pelletShaderProgram, pelletVAO);
@@ -872,23 +820,6 @@ int main()
                 if (collected == Pellets.size()) {
                     run = false;
                 }
-=======
-
-        //Draw calls
-        drawMap(    mapShaderProgram,       mapVAO);
-        drawPellets(pelletShaderProgram,    pelletVAO);
-        drawPacman( playerShaderProgram);
-        drawGhosts( ghostShaderProgram);
-
-        // Reloads pellets after consumption
-        if (permittPelletUpdate) {
-            CleanVAO(pelletVAO);
-            pelletVAO = compileVertices(Pellets);
-            permittPelletUpdate = false;
-            collected++;
-            if (collected == Pellets.size()) {
-                run = false;
->>>>>>> eec188cf8349e8cd95d0cafb7b31a54e5e1ac4e3
             }
         }
         //Update all Lerps
