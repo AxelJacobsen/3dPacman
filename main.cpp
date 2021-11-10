@@ -91,7 +91,7 @@ bool     permittPelletUpdate = false,       ///< Reloads Pellet VAO
 
 //Mouse implimentation
 // camera
-glm::vec3 cameraPos = glm::vec3(-1.0f, 0.0f, 1.1f);
+glm::vec3 cameraPos = glm::vec3(-1.0f, 0.0f, 0.1f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, 0.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 0.0f, 0.5f);
 
@@ -100,7 +100,7 @@ float yaw   = 0.0f;	// yaw is initialized to -90.0 degrees since a yaw of 0.0 re
 float pitch = 0.0f;
 float lastX = 0;
 float lastY = 0;
-float fov   = 40.0f;
+float fov   = 150.0f;
 
 // timing
 float deltaTime = 0.0f;	// time between current frame and last frame
@@ -762,7 +762,8 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_SAMPLES, 4);
-    auto window = glfwCreateWindow(width * spriteSize / resize, height * spriteSize / resize, "Pacman", nullptr, nullptr);
+   // auto window = glfwCreateWindow(width * spriteSize / resize, height * spriteSize / resize, "Pacman", nullptr, nullptr);
+    auto window = glfwCreateWindow(1000, 1000, "Pacman", nullptr, nullptr);
 
     glfwSetKeyCallback(window, key_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
@@ -809,12 +810,12 @@ int main()
     glEnableVertexAttribArray(mPosAttrib);
     glVertexAttribPointer(mPosAttrib, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), 0);
 
+    int mapSize = map.size();
+    auto mapVAO = CreateMap(&map, (&map[0]));
+
     GLuint mtexAttrib = glGetAttribLocation(mapShaderProgram, "mTexcoord");
     glEnableVertexAttribArray(mtexAttrib);
     glVertexAttribPointer(mtexAttrib, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
-
-    int mapSize = map.size();
-    auto mapVAO = CreateMap(&map, (&map[0]));
 
     auto ghostShaderProgram  = CompileShader(  ghostVertexShaderSrc,
                                                ghostFragmentShaderSrc);
@@ -972,15 +973,12 @@ GLuint load_opengl_texture(const std::string& filepath, GLuint slot)
  */
 void drawMap(const GLuint shader, const GLuint vao, const int mapSize) {
     int numElements = mapSize;
-    auto mapVertexColorLocation = glGetUniformLocation(shader, "u_Color");
-    auto mapTextureLocation = glGetUniformLocation(shader, "u_MapTexture");
+    auto mapTextureLocation = glGetUniformLocation(shader, "u_mapTexture");
 
     glUseProgram(shader);
-    applycamera(shader);
     glUniform1i(mapTextureLocation, 2);
+    applycamera(shader);
     glBindVertexArray(vao);
-    
-    glUniform4f(mapVertexColorLocation, 0.1f, 0.0f, 0.6f, 1.0f);
     glDrawElements(GL_TRIANGLES, numElements, GL_UNSIGNED_INT, (const void*)0);
 }
 /**
@@ -1012,7 +1010,6 @@ void drawGhosts(const GLuint shader) {
     glEnableVertexAttribArray(gtexAttrib);
     glVertexAttribPointer(gtexAttrib, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
 
-    auto ghostVertexColorLocation = glGetUniformLocation(shader, "gColor");
     auto ghostTextureLocation = glGetUniformLocation(shader, "g_GhostTexture");
     glUseProgram(shader);
     applycamera(shader);
@@ -1020,7 +1017,6 @@ void drawGhosts(const GLuint shader) {
     glUniform1i(ghostTextureLocation, 1);
 
     for (int g = 0; g < (ghostCount*24); g += 24) {
-        glUniform4f(ghostVertexColorLocation, 1.0f, 0.0f, 0.0f, 1.0f);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (const void*)g);
     }
     CleanVAO(ghostVAO);
@@ -1059,7 +1055,7 @@ void drawPacman(const GLuint shader) {
 void applycamera(const GLuint shader) {
 
     // pass projection matrix to shader (note that in this case it could change every frame)
-    glm::mat4 projection = glm::perspective(glm::radians(fov), (float)(width * spriteSize / 3) / (float)(height * spriteSize / 3), 0.1f, 100.0f);
+    glm::mat4 projection = glm::perspective(glm::radians(fov), (float)(width * spriteSize / 3) / (float)(height * spriteSize / 3), 0.001f, 10.0f);
     GLuint projMat = glGetUniformLocation(shader, "projection");
     glUniformMatrix4fv(projMat, 1, false, glm::value_ptr(projection));
 
@@ -1109,7 +1105,7 @@ GLuint CreateObject(GLfloat* object, int size, const int stride)
         GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, (sizeof(GLfloat) * stride), (const void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, (sizeof(GLfloat) * stride), (const void*)0);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, object_indices.size() * sizeof(object_indices)[0], (&object_indices[0]), GL_STATIC_DRAW);
@@ -1163,7 +1159,7 @@ GLuint CreateMap(std::vector<GLfloat> * map, GLfloat *mapObj) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, mapIndices.size() * sizeof(mapIndices[0]) , (&mapIndices[0]), GL_STATIC_DRAW);
 
-    return vao; //glVertexAttribPointer(ptexAttrib, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
+    return vao;
 }
 // -----------------------------------------------------------------------------
 // SHADER TRANSFORMATIONS
@@ -1183,8 +1179,7 @@ void TransformPlayer(const GLuint shaderprogram, float lerpProg, float lerpStart
     float newY = (((1 - lerpProg) * lerpStart[1]) + (lerpProg * lerpStop[1]));
 
     //LERP performed in the shader for the pacman object
-    glm::mat4 translation = glm::translate(glm::mat4(1), glm::vec3(
-        newX, newY, 0.2f));
+    glm::mat4 translation = glm::translate(glm::mat4(1), glm::vec3(newX, newY, 0.2f));
     moveCamera(newX-1, newY);
     GLuint transformationmat = glGetUniformLocation(shaderprogram, "u_TransformationMat");
 
@@ -1525,11 +1520,11 @@ void spawnGhost(const int hallCount) {
 std::pair<int,int> handleMapTextCoord(const int rep) {
     std::pair <int, int> temp = {0,0};
     switch (rep) {
-        case 0: return temp; break;
-        case 1: temp.first  = 1 ;  return temp; break;
-        case 2: temp.second = 1 ;  return temp; break;
-        case 3: temp = { 1,1 }  ;  return temp; break;
-        default:temp = { -1,-1 };  return temp; break;
+        case 3:                    return temp; break;
+        case 2:  temp.first  = 1;  return temp; break;
+        case 1:  temp.second = 1;  return temp; break;
+        case 0:  temp = { 1, 1 };  return temp; break;
+        default: temp = {-1,-1};   return temp; break;
     }
 };
 
@@ -1542,28 +1537,9 @@ std::pair<int,int> handleMapTextCoord(const int rep) {
  *
  *  @return returns float for correct coord
  */
- 
 int checkCardinal(const float xRot, const float yRot) {
-    if ((xRot < 0.5 && -0.5f < xRot) && (0.5f < yRot)) { return 0; } //North
-    else if ((0.5f < xRot) && (yRot < 0.5 && -0.5f < yRot)) { return 1; } //East
-    else if ((xRot < 0.5 && -0.5f < xRot) && (yRot < -yRot)) { return 2; } //South
-    else if ((xRot < -0.5f) && (yRot < 0.5 && -0.5f < yRot)) { return 3; } //East
-    else return -1;
-};
-
-/**
- *  Handles Ghost spawning
- *
- *  @param y    - y coordinate for coords
- *  @param x    - x coordinate for coords
- *  @param loop - current repitition / desired vertice
- *
- *  @return returns float for correct coord
- */
-
-int updateDirList(const float xRot, const float yRot) {
-    if ((xRot < 0.5 && -0.5f < xRot) && (0.5f < yRot)) { return 0; } //North
-    else if ((0.5f < xRot) && (yRot < 0.5 && -0.5f < yRot)) { return 1; } //East
+    if      ((xRot < 0.5 && -0.5f < xRot) && (0.5f < yRot))  { return 0; } //North
+    else if ((0.5f < xRot) && (yRot < 0.5 && -0.5f < yRot))  { return 1; } //East
     else if ((xRot < 0.5 && -0.5f < xRot) && (yRot < -yRot)) { return 2; } //South
     else if ((xRot < -0.5f) && (yRot < 0.5 && -0.5f < yRot)) { return 3; } //East
     else return -1;
@@ -1634,9 +1610,9 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
         lastY = ypos;
         firstMouse = false;
     }
-
+    
     float xoffset = xpos - lastX;
-    float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
+    float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top     
     lastX = xpos;
     lastY = ypos;
 
@@ -1658,7 +1634,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
     front.x = -cos(glm::radians(yaw)) * cos(glm::radians(pitch));
     front.y = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
     int temp = checkCardinal(front.x, front.y);
-    if (temp != -1) { Pacman[0]->updateCard(temp); printf(" %i ", Pacman[0]->getCard());}
+    if (temp != -1) { Pacman[0]->updateCard(temp);}
     cameraFront = glm::normalize(front);
 }
 

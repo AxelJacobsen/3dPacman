@@ -21,10 +21,8 @@ layout(location=0) uniform mat4 u_TransformationMat = mat4(1);
 
 void main()
 {
-//Pass the color and texture data for the fragment shader
 vsTexcoord = pTexcoord;
-//We multiply our matrices with our position to change the positions of vertices to their final destinations.
-gl_Position = view * u_TransformationMat * vec4(pPosition, 1.0f);
+gl_Position = projection * view * u_TransformationMat * vec4(pPosition, 1.0f);
 }
 )";
 
@@ -37,7 +35,6 @@ in vec2 vsTexcoord;
 /** Outputs */
 out vec4 color;
 
-/** Binding specifies what texture slot the texture should be at (in this case TEXTURE0) */
 uniform sampler2D u_PlayerTexture;
 
 void main()

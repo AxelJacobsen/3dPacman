@@ -21,7 +21,7 @@ void main()
 {
 vsTexcoord = gTexcoord;
 //We multiply our matrices with our position to change the positions of vertices to their final destinations.
-gl_Position = view * vec4(g_Position, 1.0f);
+gl_Position = projection * view * vec4(g_Position, 1.0f);
 }
 )";
 
@@ -34,7 +34,6 @@ in vec2 vsTexcoord;
 /** Outputs */
 out vec4 color;
 
-uniform vec4 gColor;
 uniform sampler2D g_GhostTexture;
 
 void main()

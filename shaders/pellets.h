@@ -16,7 +16,7 @@ uniform mat4 projection;
 void main()
 {
 //We multiply our matrices with our position to change the positions of vertices to their final destinations.
-gl_Position = view * vec4(p_Position, 1.0f);
+gl_Position = projection * view * vec4(p_Position, 1.0f);
 }
 )";
 
