@@ -57,6 +57,8 @@ void    applycamera(const GLuint shader);
 void    moveCamera(float x, float y);
 int     findWhatWalls(std::vector<std::vector<int>> levelVect, int x, int y);
 int     howManyWalls(int num);
+void    spawnGhost(const int hallCount);
+int     checkCardinal(const float xRot, const float yRot);
 
 
 //Callback functions
@@ -66,6 +68,8 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 
 std::vector<std::vector<int>>   loadFromFile();
 std::vector<int>                loopOrder(int num);
+std::pair<int, int>             handleMapTextCoord(const int rep);
+
 
 void GLAPIENTRY MessageCallback(GLenum source,
                                 GLenum type,
@@ -87,16 +91,16 @@ bool     permittPelletUpdate = false,       ///< Reloads Pellet VAO
 
 //Mouse implimentation
 // camera
-glm::vec3 cameraPos = glm::vec3(-1.0f, 0.0f, 0.6f);
+glm::vec3 cameraPos = glm::vec3(-1.0f, 0.0f, 1.1f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, 0.0f);
-glm::vec3 cameraUp = glm::vec3(0.0f, 0.0f, 1.0f);
+glm::vec3 cameraUp = glm::vec3(0.0f, 0.0f, 0.5f);
 
 bool firstMouse = true;
-float yaw =   0.0f;	// yaw is initialized to -90.0 degrees since a yaw of 0.0 results in a direction vector pointing to the right so we initially rotate a bit to the left.
+float yaw   = 0.0f;	// yaw is initialized to -90.0 degrees since a yaw of 0.0 results in a direction vector pointing to the right so we initially rotate a bit to the left.
 float pitch = 0.0f;
 float lastX = 0;
 float lastY = 0;
-float fov = 45.0f;
+float fov   = 40.0f;
 
 // timing
 float deltaTime = 0.0f;	// time between current frame and last frame
@@ -116,11 +120,12 @@ private:
     float   lerpStart[2],               //Contains start coords of LERP
             lerpStop[2],                //Contains stop  coords of LERP
             surround[3][3][2],          //Coords for surrounding walls
-            speedDiv = 10.0f,           //Higher number = slower speed
+            speedDiv = 20.0f,           //Higher number = slower speed
             lerpStep = 1.0f/speedDiv,   //Speed of LERP, also slowed by frequency in main
             lerpProg = lerpStep;        //defines progress as step to avoid hickups
 
     int     dir,                        //Direction character is heading
+            cardDir,                    //Cardinal direction character is heading
             prevDir,                    //Previous direction character was heading
             XYpos[2],                   //Value of characters current XY
             animVal = 0;                //A number between 0 - 3 used to define
@@ -161,6 +166,8 @@ public:
     void recieveMapInt(std::vector<std::vector<int>> lvlVectInt);
     void recieveMapfloat(float coord, int Y);
     int  getMapVal(int x, int y);
+    void updateCard(int newDir);
+    int  getCard();
     //AI functions
     int   getRandomAIdir();
     void  AIupdateVertice();
@@ -514,6 +521,24 @@ int Character::getMapVal(int x, int y) {
 };
 
 /**
+ *  Returns map value
+ *
+ *  @return returns if coord is wall or not
+ */
+void Character::updateCard(int newDir) {
+    cardDir = newDir;
+};
+
+/**
+ *  Returns map value
+ *
+ *  @return returns if coord is wall or not
+ */
+int  Character::getCard() {
+    return cardDir;
+}
+
+/**
  *  Bruteforces a legal direction for AI
  *
  *  @see      Character::getLegalDir(int dir);
@@ -776,10 +801,20 @@ int main()
     auto pelletVAO           = compileVertices(Pellets);
     auto pelletShaderProgram = CompileShader(  pelletVertexShaderSrc,
                                                pelletFragmentShaderSrc);
-    int mapSize = map.size();
-    auto mapVAO              = CreateMap(&map,(&map[0]));
+    
     auto mapShaderProgram    = CompileShader(  mapVertexShaderSrc,
                                                mapFragmentShaderSrc);
+
+    GLint mPosAttrib = glGetAttribLocation(mapShaderProgram, "mPosition");
+    glEnableVertexAttribArray(mPosAttrib);
+    glVertexAttribPointer(mPosAttrib, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), 0);
+
+    GLuint mtexAttrib = glGetAttribLocation(mapShaderProgram, "mTexcoord");
+    glEnableVertexAttribArray(mtexAttrib);
+    glVertexAttribPointer(mtexAttrib, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
+
+    int mapSize = map.size();
+    auto mapVAO = CreateMap(&map, (&map[0]));
 
     auto ghostShaderProgram  = CompileShader(  ghostVertexShaderSrc,
                                                ghostFragmentShaderSrc);
@@ -790,6 +825,7 @@ int main()
     //Texture loading
     auto spriteSheetP = load_opengl_texture("assets/pacman.png", 0);
     auto spriteSheetG = load_opengl_texture("assets/pacman.png", 1);
+    auto spriteSheetM = load_opengl_texture("assets/wallTexture.png", 2);
 
     double currentTime = 0.0;
     glfwSetTime(0.0);
@@ -856,6 +892,7 @@ int main()
 
     glDeleteTextures(1, &spriteSheetP);
     glDeleteTextures(1, &spriteSheetG);
+    glDeleteTextures(1, &spriteSheetM);
 
     CleanVAO(mapVAO);
     CleanVAO(pelletVAO);
@@ -936,9 +973,13 @@ GLuint load_opengl_texture(const std::string& filepath, GLuint slot)
 void drawMap(const GLuint shader, const GLuint vao, const int mapSize) {
     int numElements = mapSize;
     auto mapVertexColorLocation = glGetUniformLocation(shader, "u_Color");
+    auto mapTextureLocation = glGetUniformLocation(shader, "u_MapTexture");
+
     glUseProgram(shader);
     applycamera(shader);
+    glUniform1i(mapTextureLocation, 2);
     glBindVertexArray(vao);
+    
     glUniform4f(mapVertexColorLocation, 0.1f, 0.0f, 0.6f, 1.0f);
     glDrawElements(GL_TRIANGLES, numElements, GL_UNSIGNED_INT, (const void*)0);
 }
@@ -1117,12 +1158,12 @@ GLuint CreateMap(std::vector<GLfloat> * map, GLfloat *mapObj) {
         GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (const void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 5, (const void*)0);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, mapIndices.size() * sizeof(mapIndices[0]) , (&mapIndices[0]), GL_STATIC_DRAW);
 
-    return vao;
+    return vao; //glVertexAttribPointer(ptexAttrib, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
 }
 // -----------------------------------------------------------------------------
 // SHADER TRANSFORMATIONS
@@ -1177,11 +1218,14 @@ void callMapCoordinateCreation(std::vector<std::vector<int>> levelVect, std::vec
                     for (int corners = 0; corners < 4; corners++) {
                         loop = loopO[counter];
                         counter++;
-                        if (2 == corners) { height = 0.2f;};
+                        if (2 == corners) { height = 0.15f;};
                         for (int point = 0; point < 3; point++) {
                             (*map).push_back(getCoordsWithInt(i, j, loop, height));
                             loop++;
                         }
+                        std::pair<int,int> pholder = handleMapTextCoord(corners);
+                        (*map).push_back(pholder.first );
+                        (*map).push_back(pholder.second);
                     }
                 }
             }
@@ -1192,35 +1236,7 @@ void callMapCoordinateCreation(std::vector<std::vector<int>> levelVect, std::vec
             else { hallCount++;  Pellets.push_back(new Pellet(j, i)); }
         }
     }
-    time_t t;
-    srand((unsigned)time(&t));
-    std::vector<int> formerPositions;
-    bool noDouble = false;
-    do {
-        for (int g = 0; g < ghostCount; g++) {
-            int randPos;
-
-            randPos = (rand() % hallCount);
-            formerPositions.push_back(randPos);
-        }
-        noDouble = true;
-        for (int n = 0; n < ghostCount; n++) {
-            for (int m = (n+1); m < (ghostCount); m++) {
-                if (formerPositions[n] == formerPositions[m]) {
-                    noDouble = false;
-                }
-            }
-        }
-    } while (!noDouble);
-    int count = 0;
-    for (auto& it : Pellets) {
-        for (int l = 0; l < ghostCount; l++) {
-            if (count == formerPositions[l]) {
-                Ghosts.push_back(new Character(it->checkCoords(0), it->checkCoords(1), true));
-            }
-        }
-        count++;
-    }
+    spawnGhost(hallCount);
 }
 
 /**
@@ -1365,14 +1381,14 @@ void moveCamera(float x, float y) {
  *
  *  @return returns VAO gotten from CreateObject func
  */
-int findWhatWalls(std::vector<std::vector<int>> levelVect, int x, int y) {
+int findWhatWalls(std::vector<std::vector<int>> levelVect, const int x, const int y) {
     int wallType = 0;
     for (int i = 0; i < 4; i++) {
         switch (i) {
-            case 1: if ((y + 1) < height)   { if ((levelVect[(y + 1)][x] == 0) || levelVect[(y + 1)][x] == 2) { wallType += 1; } }
-            case 2: if (0 < (x - 1))        { if ((levelVect[y][(x - 1)] == 0) || levelVect[y][(x - 1)] == 2) { wallType += 2; } }
-            case 3: if ((x + 1) < width)    { if ((levelVect[y][(x + 1)] == 0) || levelVect[y][(x + 1)] == 2) { wallType += 4; } }
-            case 4: if (0 < (y - 1))        { if ((levelVect[(y - 1)][x] == 0) || levelVect[(y - 1)][x] == 2) { wallType += 8; } }
+            case 0: if ((y + 1) < height)   { if ((levelVect[(y + 1)][x] == 0) || levelVect[(y + 1)][x] == 2) { wallType += 1; } } break;
+            case 1: if (0 < (x - 1))        { if ((levelVect[y][(x - 1)] == 0) || levelVect[y][(x - 1)] == 2) { wallType += 2; } } break;
+            case 2: if ((x + 1) < width)    { if ((levelVect[y][(x + 1)] == 0) || levelVect[y][(x + 1)] == 2) { wallType += 4; } } break;
+            case 3: if (0 < (y - 1))        { if ((levelVect[(y - 1)][x] == 0) || levelVect[(y - 1)][x] == 2) { wallType += 8; } } break;
         }
     }
     return wallType;
@@ -1391,28 +1407,13 @@ int findWhatWalls(std::vector<std::vector<int>> levelVect, int x, int y) {
 int howManyWalls(int num) {
     switch (num) {
         // 1 wall
-    case 1:
-    case 2:
-    case 4:
-    case 8:
-        return 1; break;
+    case 1: case 2: case 4: case 8:                     return 1; break;
         // 2 walls
-    case 3:
-    case 5:
-    case 6:
-    case 9:
-    case 10:
-    case 12:
-        return 2; break;
+    case 3: case 5: case 6: case 9: case 10: case 12:   return 2; break;
         // 3 walls (dont think there is one but its for redundance)
-    case 7:
-    case 11:
-    case 13:
-    case 14:
-        return 3; break;
+    case 7: case 11: case 13: case 14:                  return 3; break;
         // 4 walls (doesnt exist and would be wierd)
-    case 15:
-        return 4; break;
+    case 15:                                            return 4; break;
     }
     return -1;
 }
@@ -1430,8 +1431,8 @@ int howManyWalls(int num) {
 std::vector<int> loopOrder(int num) {
     std::pair<int, int> up   = { 3, 6 };
     std::pair<int, int> left = { 3, 0 };
-    std::pair<int, int> down = { 0, 9 };
-    std::pair<int, int> right= { 9, 6 };
+    std::pair<int, int> right ={ 0, 9 }; //these are swapped for whatever reason 
+    std::pair<int, int> down = { 6, 9 }; //
     std::vector<int> loopy;
     int rep = 0;
     int push[8] = {0};
@@ -1470,6 +1471,103 @@ std::vector<int> loopOrder(int num) {
 
     return loopy;
 }
+
+/**
+ *  Handles Ghost spawning
+ *
+ *  @param y    - y coordinate for coords
+ *  @param x    - x coordinate for coords
+ *  @param loop - current repitition / desired vertice
+ *
+ *  @return returns float for correct coord
+ */
+void spawnGhost(const int hallCount) {
+    time_t t;
+    srand((unsigned)time(&t));
+    std::vector<int> formerPositions;
+    bool noDouble = false;
+    do {
+        for (int g = 0; g < ghostCount; g++) {
+            int randPos;
+
+            randPos = (rand() % hallCount);
+            formerPositions.push_back(randPos);
+        }
+        noDouble = true;
+        for (int n = 0; n < ghostCount; n++) {
+            for (int m = (n + 1); m < (ghostCount); m++) {
+                if (formerPositions[n] == formerPositions[m]) {
+                    noDouble = false;
+                }
+            }
+        }
+    } while (!noDouble);
+    int count = 0;
+    for (auto& it : Pellets) {
+        for (int l = 0; l < ghostCount; l++) {
+            if (count == formerPositions[l]) {
+                Ghosts.push_back(new Character(it->checkCoords(0), it->checkCoords(1), true));
+            }
+        }
+        count++;
+    }
+};
+
+/**
+ *  Handles Ghost spawning
+ *
+ *  @param y    - y coordinate for coords
+ *  @param x    - x coordinate for coords
+ *  @param loop - current repitition / desired vertice
+ *
+ *  @return returns float for correct coord
+ */
+std::pair<int,int> handleMapTextCoord(const int rep) {
+    std::pair <int, int> temp = {0,0};
+    switch (rep) {
+        case 0: return temp; break;
+        case 1: temp.first  = 1 ;  return temp; break;
+        case 2: temp.second = 1 ;  return temp; break;
+        case 3: temp = { 1,1 }  ;  return temp; break;
+        default:temp = { -1,-1 };  return temp; break;
+    }
+};
+
+/**
+ *  Handles Ghost spawning
+ *
+ *  @param y    - y coordinate for coords
+ *  @param x    - x coordinate for coords
+ *  @param loop - current repitition / desired vertice
+ *
+ *  @return returns float for correct coord
+ */
+ 
+int checkCardinal(const float xRot, const float yRot) {
+    if ((xRot < 0.5 && -0.5f < xRot) && (0.5f < yRot)) { return 0; } //North
+    else if ((0.5f < xRot) && (yRot < 0.5 && -0.5f < yRot)) { return 1; } //East
+    else if ((xRot < 0.5 && -0.5f < xRot) && (yRot < -yRot)) { return 2; } //South
+    else if ((xRot < -0.5f) && (yRot < 0.5 && -0.5f < yRot)) { return 3; } //East
+    else return -1;
+};
+
+/**
+ *  Handles Ghost spawning
+ *
+ *  @param y    - y coordinate for coords
+ *  @param x    - x coordinate for coords
+ *  @param loop - current repitition / desired vertice
+ *
+ *  @return returns float for correct coord
+ */
+
+int updateDirList(const float xRot, const float yRot) {
+    if ((xRot < 0.5 && -0.5f < xRot) && (0.5f < yRot)) { return 0; } //North
+    else if ((0.5f < xRot) && (yRot < 0.5 && -0.5f < yRot)) { return 1; } //East
+    else if ((xRot < 0.5 && -0.5f < xRot) && (yRot < -yRot)) { return 2; } //South
+    else if ((xRot < -0.5f) && (yRot < 0.5 && -0.5f < yRot)) { return 3; } //East
+    else return -1;
+};
 
 // -----------------------------------------------------------------------------
 // Clean VAO
@@ -1558,7 +1656,9 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
     glm::vec3 front;
     front.z = sin(glm::radians(pitch));
     front.x = -cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-    front.y =  sin(glm::radians(yaw)) * cos(glm::radians(pitch));    
+    front.y = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+    int temp = checkCardinal(front.x, front.y);
+    if (temp != -1) { Pacman[0]->updateCard(temp); printf(" %i ", Pacman[0]->getCard());}
     cameraFront = glm::normalize(front);
 }
 
@@ -1571,20 +1671,29 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
+    int currentCardDir = Pacman[0]->getCard();
+    int desdir[4] = {2,9,4,3};
+
+    switch (currentCardDir) {
+        case 0: desdir[0] = 2; desdir[1] = 4; desdir[2] = 3; desdir[3] = 9; break;  //North
+        case 1: desdir[0] = 9; desdir[1] = 3; desdir[2] = 2; desdir[3] = 4; break;  //East
+        case 2: desdir[0] = 4; desdir[1] = 2; desdir[2] = 9; desdir[3] = 3; break;  //South
+        case 3: desdir[0] = 3; desdir[1] = 9; desdir[2] = 4; desdir[3] = 2; break;  //West
+    }
     if (action == GLFW_PRESS) {
         float cameraSpeed = 2.5 * deltaTime;
         switch (key) {
-        case GLFW_KEY_W:        if (Pacman[0]->getLegalDir(2)) {
-            Pacman[0]->updateDir(2); Pacman[0]->changeDir();
+        case GLFW_KEY_W:        if (Pacman[0]->getLegalDir(desdir[0])) {
+            Pacman[0]->updateDir(desdir[0]); Pacman[0]->changeDir();
         };  break;
-        case GLFW_KEY_S:        if (Pacman[0]->getLegalDir(4)) {
-            Pacman[0]->updateDir(4); Pacman[0]->changeDir();
+        case GLFW_KEY_S:        if (Pacman[0]->getLegalDir(desdir[1])) {
+            Pacman[0]->updateDir(desdir[1]); Pacman[0]->changeDir();
         };  break;
-        case GLFW_KEY_A:        if (Pacman[0]->getLegalDir(3)) {
-            Pacman[0]->updateDir(3); Pacman[0]->changeDir();
+        case GLFW_KEY_A:        if (Pacman[0]->getLegalDir(desdir[2])) {
+            Pacman[0]->updateDir(desdir[2]); Pacman[0]->changeDir();
         };  break;
-        case GLFW_KEY_D:        if (Pacman[0]->getLegalDir(9)) {
-            Pacman[0]->updateDir(9); Pacman[0]->changeDir();
+        case GLFW_KEY_D:        if (Pacman[0]->getLegalDir(desdir[3])) {
+            Pacman[0]->updateDir(desdir[3]); Pacman[0]->changeDir();
         };  break;
         }
     }
