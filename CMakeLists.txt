@@ -18,7 +18,7 @@ add_executable(Pacman
 	shaders/map.h
 	shaders/ghosts.h
 	shaders/pellets.h 
-	include/glutil.h)
+	include/glutil.h "character.cpp" "character.h" "pellet.cpp" "pellet.h" "map.cpp" "map.h" "include.h" "globFunc.cpp" "globFunc.h" "globals.h")
 
 target_link_libraries(Pacman
 	PRIVATE
@@ -41,3 +41,9 @@ target_compile_definitions(${PROJECT_NAME}
   COMMAND ${CMAKE_COMMAND} -E copy
   ${CMAKE_SOURCE_DIR}/assets/pacman.png
   ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets/pacman.png)
+
+    add_custom_command(
+  TARGET ${PROJECT_NAME} POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy
+  ${CMAKE_SOURCE_DIR}/assets/wallTexture.png
+  ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets/wallTexture.png)
