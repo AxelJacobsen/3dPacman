@@ -5,37 +5,6 @@
 // -----------------------------------------------------------------------------
 
 /**
- *  Initializes Pacman
- *
- *  @param    x  - Initialization pos X
- *  @param    y  - Initializaiton pos Y
- *  @see      Character::characterInit();
- */
-Character::Character(int x, int y) {
-    dir = 9, prevDir = 3;
-    XYpos[0] = x, XYpos[1] = y;
-    characterInit();
-};
-
-/**
- *  Initializes Ghosts
- *
- *  @param    x  - Initialization pos X
- *  @param    y  - Initializaiton pos Y
- *  @param    ai - upsates AI to define as Ghost
- *  @see      Character:: getRandomAIdir();
- *  @see      Character:: characterInit();
- */
-Character::Character(int x, int y, bool ai) {
-    XYpos[0] = x, XYpos[1] = y;
-    AI = ai;
-    dir = getRandomAIdir();
-    prevDir = dir;
-    AIdelay = dir;
-    characterInit();
-};
-
-/**
  *  Initializes LERP coords
  *
  *  @see      Character:: convertToVert();
@@ -53,22 +22,16 @@ void Character::characterInit() {
     else if (dir == 4) {
         lerpStop[0] = lerpStart[0];
         lerpStop[1] = lerpStart[1];
-        lerpStop[1] -= Yshift;
+        lerpStop[1] -= XYshift.second;
     }
     else if (dir == 3) {
         lerpStop[0] = lerpStart[0];
         lerpStop[1] = lerpStart[1];
-        lerpStop[0] -= Xshift;
+        lerpStop[0] -= XYshift.first;
     }
     else if (dir == 9) {
         lerpStop[0] = vertices[15];
         lerpStop[1] = vertices[16];
-    }
-    if (!AI) {
-        pacAnimate();
-    }
-    else {
-        AIanimate();
     }
 }
 
@@ -81,7 +44,7 @@ void Character::convertToVert() {
     int loop = 0, callCount = 0;
     for (int y = 0; y < 4; y++) {
         for (int x = 0; x < 3; x++) {
-            vertices[loop] = (getCoordsWithInt(XYpos[1], XYpos[0], callCount, 0));
+            vertices[loop] = (CamHolder->getCoordsWithInt(XYpos[1], XYpos[0], callCount, 0, XYshift));
             loop++; callCount++;
         }
         loop += 2;
@@ -102,9 +65,11 @@ bool Character::getLegalDir(int dir) {
     case 3: testPos[0] -= 1; break;      //LEFT test
     case 9: testPos[0] += 1; break;      //RIGHT test
     }
-    if ((testPos[0] < width && testPos[1] < height) && (0 <= testPos[0] && 0 <= testPos[1])) {
-        if (Pacman[0]->getMapVal(testPos[1], testPos[0]) != 1) { return true; }
-        else { return false; }
+
+    if ((testPos[0] < (XYshift.first * 3) && testPos[1] < (XYshift.second * 3)) && (0 <= testPos[0] && 0 <= testPos[1])) {
+        //if (Maps[0]->getMapVal(testPos[0], testPos[1]) != 1) { return true; }
+        //else { return false; }
+        return true;
     }
     else { return false; }    //incase moving outside map illegal untill further notice
     return false;
@@ -120,9 +85,8 @@ void Character::getLerpCoords() {
     case 3: XYpos[0] -= 1; break;     //LEFT
     case 9: XYpos[0] += 1; break;     //RIGHT
     }
-
-    lerpStop[0] = (XYpos[0] * Xshift);
-    lerpStop[1] = ((XYpos[1] * Yshift) - 1);
+    lerpStop[0] = (XYpos[0] * XYshift.first);
+    lerpStop[1] = ((XYpos[1] * XYshift.second) - 1);
     if (AI) lerpStop[0] -= 1;
 };
 
@@ -134,6 +98,7 @@ void Character::getLerpCoords() {
  *  @see      Character:: getLerpCoords();
  */
 void Character::changeDir() {
+    /*
     bool legal = true;
 
     if (AI && AIdelay == 0) { dir = getRandomAIdir(); AIdelay = ((rand() + 4) % 10); }
@@ -168,16 +133,7 @@ void Character::changeDir() {
         lerpProg = lerpStep / 2.0f;
         prevDir = dir;
     }
-};
-
-/**
- *  passes Transform request onwards with aditional parameters
- *
- *  @param    ShaderProgram  - objects shaderprogram
- *  @see      void TransformPlayer(const GLuint shaderprogram, float lerpProg, float lerpStart[], float lerpStop[])
- */
-void Character::Transform(const GLuint ShaderProgram) {
-    TransformPlayer(ShaderProgram, lerpProg, lerpStart, lerpStop);
+    */
 };
 
 /**
@@ -188,6 +144,7 @@ void Character::Transform(const GLuint ShaderProgram) {
  *  @see      Character:: AIupdateVertice();
  */
 void Character::updateLerp() {
+    /*
     if (lerpProg > 1 || lerpProg < 0) { changeDir(); }
     else { lerpProg += lerpStep; }
 
@@ -195,15 +152,7 @@ void Character::updateLerp() {
         checkPellet();
     }
     if (AI) { AIupdateVertice(); }
-}
-
-/**
- *  updatesDir with dir from key input
- *
- *  @param    outDir  - new dir from key input
- */
-void Character::updateDir(int outDir) {
-    dir = outDir;
+    */
 }
 
 /**
@@ -217,50 +166,6 @@ GLfloat Character::getVertCoord(int index) {
 };
 
 /**
- *  Checks whether pacman is on a pellet
- *
- *  @see      Pellets:: checkCoords( int XY);
- *  @see      Pellets:: removePellet();
- */
-void Character::checkPellet() {
-    int test = 0;
-    for (auto& it : Pellets) {
-
-        int check = 0;
-        for (int i = 0; i < 2; i++) {
-            if (XYpos[i] == it->checkCoords(i) && it->isEnabled()) { check++; }
-        }
-        if (check == 2) {
-            it->removePellet();
-            //Pellets.erase(it);
-            break;
-        }
-        test++;
-    }
-};
-
-/**
- *  Checks if pacman is crashing with ghost
- *
- *  @see      Character:: AIgetXY();
- *  @see      Character:: AIgetLerpPog();
- *  @return   returns wheter or not pacman and ghost are crashing
- */
-bool Character::checkGhostCollision() {
-    int check = 0;
-    for (auto& it : Ghosts) {
-        check = 0;
-        for (int u = 0; u < 2; u++) {
-            if (it->AIgetXY(u) == XYpos[u]) { check++; }
-        }
-        if (check == 2) {
-            if (AIgetLerpPog() <= (lerpProg + lerpStep) && (lerpProg - lerpStep) <= AIgetLerpPog()) { return true; }
-        }
-    }
-    return false;
-}
-
-/**
  *  Updates texture coordinates
  *
  *  @param    hMin - smallets height point on spritesheet
@@ -269,173 +174,41 @@ bool Character::checkGhostCollision() {
  *  @param    wMax - largest  height point on spritesheet
  */
 void Character::characterAnimate(float hMin, float wMin, float hMax, float wMax) {
+    
+    switch (dir) {
+    case 2: hMin *= 1; hMax *= 2; break;   //UP
+    case 4: hMin *= 0; hMax *= 1; break;   //DOWN
+    case 3: hMin *= 2; hMax *= 3; break;   //LEFT
+    case 9: hMin *= 3; hMax *= 4; break;   //RIGHT
+    }
+
     vertices[3] = wMin;   vertices[4] = hMax; // Bot Left
     vertices[8] = wMin;   vertices[9] = hMin; // Top Left
     vertices[13] = wMax;   vertices[14] = hMin; // Top Right
     vertices[18] = wMax;   vertices[19] = hMax; // Bot Right
 }
 
-/**
- *  Handles pacman animation
- *
- *  @see  Character:: characterAnimate(float hMin, float wMin, float hMax, float wMax);
- */
-void Character::pacAnimate() {
-    if (animFlip) { animVal++; }
-    else { animVal--; }
-    float wMod = (1.0f / 6.0f);
-    float hMod = (1.0f / 4.0f);
-    float mhMod = hMod;
-    float mwMod = (wMod * animVal) + wMod;
-    wMod *= animVal;
-
-    switch (dir) {
-    case 2: hMod *= 1; mhMod *= 2; break;   //UP
-    case 4: hMod *= 0; mhMod *= 1; break;   //DOWN
-    case 3: hMod *= 2; mhMod *= 3; break;   //LEFT
-    case 9: hMod *= 3; mhMod *= 4; break;   //RIGHT
-    }
-    characterAnimate(hMod, wMod, mhMod, mwMod);
-    if (animVal == 3) animFlip = false;
-    else if (animVal == 0) animFlip = true;
-}
-
-/**
- *  Recieves lvlVect in to Pacman[0]
- */
-void Character::recieveMapInt(std::vector<std::vector<int>> lvlVectInt) {
-    mapI = lvlVectInt;
+void Character::cleanCharacter() {
+    glDeleteProgram(shaderProgram);
+    if (characterVAO) CleanVAO(characterVAO);
 };
 
-/**
- *  Recieves lvlVect float in to Pacman[0]
- */
-void Character::recieveMapfloat(float coord, int Y) {
-    mapF[Y].push_back(coord);
-};
-
-/**
- *  Returns map value
- *
- *  @return returns if coord is wall or not
- */
-int Character::getMapVal(int x, int y) {
-    return mapI[x][y];
-};
-
-/**
- *  Returns map value
- *
- *  @return returns if coord is wall or not
- */
-void Character::updateCard(int newDir) {
-    cardDir = newDir;
-};
-
-/**
- *  Returns map value
- *
- *  @return returns if coord is wall or not
- */
-int  Character::getCard() {
-    return cardDir;
+void Character::setShader(const GLuint shaderProg) {
+    shaderProgram = shaderProg;
 }
 
-/**
- *  Bruteforces a legal direction for AI
- *
- *  @see      Character::getLegalDir(int dir);
- *  @return   returns a legal direction for the AI to take
- */
-int Character::getRandomAIdir() {
-    int temp = 0;
-    do {
-        temp = (rand() % 4);
-        switch (temp)
-        {
-        case 0: temp = 2;    break;
-        case 1: temp = 4;    break;
-        case 2: temp = 3;    break;
-        case 3: temp = 9;    break;
-        }
-    } while (!getLegalDir(temp));
-    return temp;
+void Character::setVAO(const GLuint vao) {
+    characterVAO = vao;
 }
 
-/**
- *  Handles AI movement
- */
-void Character::AIupdateVertice() {
-    for (int f = 0; f < (4 * 5); f += 5) {
-        for (int k = f; k < (f + 3); k++) {
-            if (k == f) {
-                vertices[k] = (((1 - lerpProg) * lerpStart[0]) + (lerpProg * lerpStop[0]));
-            }
-            else if (k == (f + 1)) {
-                vertices[k] = (((1 - lerpProg) * lerpStart[1]) + (lerpProg * lerpStop[1]));
-            }
-            switch (k) {
-            case 0:   vertices[k];            break;
-            case 1:   vertices[k];            break;
-
-            case 5:   vertices[k];            break;
-            case 6:   vertices[k] += Yshift;  break;
-
-            case 10:  vertices[k] += Xshift;  break;
-            case 11:  vertices[k] += Yshift;  break;
-
-            case 15:  vertices[k] += Xshift;  break;
-            case 16:  vertices[k];            break;
-            default:  vertices[k] = 0.0f;     break;
-            }
-        }
-    }
+GLuint Character::getShader() {
+    return shaderProgram;
 }
 
-/**
- *  Returns the AIs lerpProg
- *
- *  @return   AI lerpProg
- */
-float Character::AIgetLerpPog() {
-    return lerpProg;
+GLuint Character::getVAO(){
+    return characterVAO;
 }
 
-/**
- *  Returns the AIs XY
- *
- *  @return   AI XY
- */
-int Character::AIgetXY(int xy) {
-    return XYpos[xy];
+void  Character::callCreateCharacterVao(GLfloat* object, int size, const int stride) {
+    characterVAO = CreateObject(object, size, stride);
 }
-
-/**
- *  Handles AI animation
- *
- *  @see  Character:: characterAnimate(float hMin, float wMin, float hMax, float wMax);
- */
-void Character::AIanimate() {
-    float wMod = (1.0f / 6.0f);
-    float hMod = (1.0f / 4.0f);
-    float mhMod = hMod, mwMod = wMod;
-    if (!animFlip) {
-        animFlip = true;
-        animVal = 1;
-        wMod *= 5;
-        mwMod = 1.0f;
-    }
-    else {
-        animFlip = false;
-        animVal = 0;
-        wMod *= 4;
-        mwMod *= 5;
-    }
-    switch (dir) {
-    case 2: hMod *= 1; mhMod *= 2; break;   //UP
-    case 4: hMod *= 0; mhMod *= 1; break;   //DOWN
-    case 3: hMod *= 2; mhMod *= 3; break;   //LEFT
-    case 9: hMod *= 3; mhMod *= 4; break;   //RIGHT
-    }
-    characterAnimate(hMod, wMod, mhMod, mwMod);
-};

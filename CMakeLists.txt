@@ -14,11 +14,30 @@ add_subdirectory(glad)
 
 add_executable(Pacman
 	main.cpp
-	shaders/player.h
-	shaders/map.h
-	shaders/ghosts.h
-	shaders/pellets.h 
-	include/glutil.h "character.cpp" "character.h" "pellet.cpp" "pellet.h" "map.cpp" "map.h" "include.h" "globFunc.cpp" "globFunc.h" "globals.h")
+	shaders/playerShad.h
+	shaders/mapShad.h
+    shaders/ghostShad.h
+	shaders/pelletsShad.h 
+	include/glutil.h
+	"character.h"
+	"character.cpp"
+	"pellet.h"
+	"pellet.cpp"
+	"map.h" 
+	"map.cpp"
+	"include.h"
+	"globFunc.h"
+	"globFunc.cpp"
+	"initialize.h"
+	"initialize.cpp"
+	
+	
+	"ghost.h"
+	"ghost.cpp"
+	"pacman.h"
+	"pacman.cpp"
+	"camera.h"
+	"camera.cpp")
 
 target_link_libraries(Pacman
 	PRIVATE

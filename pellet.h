@@ -6,8 +6,8 @@
 #ifndef __PELLET_H
 #define __PELLET_H
 
-#include "globFunc.h"
-
+#include "include.h"
+#include "camera.h"
  /**
   *  Pellet class used to store data about all pellets, and
   *  apply functions.
@@ -20,6 +20,12 @@ private:
     bool    enabled = true;             //Decides whether to do collision or not
     GLfloat vertices[4 * 3] = { 0.0f }; //Hold pellets vertices X Y Z
     std::vector<int> test;
+    GLuint pelletShaderProgram;
+    GLuint pelletVAO;
+    std::pair<float, float> XYshift{ 0,0 };
+    
+    Camera* pCamHolder;
+
 public:
     Pellet() {};
     Pellet(int x, int y);
@@ -30,8 +36,19 @@ public:
     void initCoords();
     GLfloat getVertCoord(int index);
     void removePellet();
-    int checkCoords(int XY);
+    int  checkCoords(int XY);
     bool isEnabled();
+    void callCompilePelletShader();
+    void drawPellets(const int size);
+    void cleanPellets();
+    void cleanPelletVAO();
+    int  getVertSize() { return sizeof(vertices) / sizeof(vertices[0]); }
+    void callCreatePelletVAO(GLfloat* object, int size, const int stride);
+    void   setVAO(const GLuint vao);
+    GLuint getVAO();
+    GLuint getShader();
+    void setXYshift(std::pair<float, float> XYvalues) { XYshift = XYvalues; };
+    void getPelletCameraPointer(Camera* newCamera) { pCamHolder = newCamera; };
 };
 
 #endif
