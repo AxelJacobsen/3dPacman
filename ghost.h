@@ -23,9 +23,8 @@ public:
 
     virtual void changeDir();
     virtual void updateLerp();
-    virtual void callCompileShader();
+    void compileGhostShader();
     
-
     bool  checkGhostCollision(float pacX, float pacY);
     int   ghostGetRandomDir();
     void  ghostUpdateVertice();

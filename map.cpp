@@ -16,11 +16,14 @@ Map::Map(std::string filePath) {
     std::ifstream inn(filePath);
     if (inn) {
         inn >> width; inn.ignore(1); inn >> height;
+        XYshift.first = 2.0f / float(width);
+        XYshift.second = 2.0f / float(height);
         std::vector<std::vector<int>> tempMapVect(height, std::vector<int>(width, 0));
         int row = 0, column = 0;
         int temp;
         inn >> temp;
         while (column < height) {
+            //int Yvalue = (column);
             int Yvalue = (height - 1 - column);
             if (row < width) {
                 tempMapVect[Yvalue][row] = temp;
@@ -32,6 +35,9 @@ Map::Map(std::string filePath) {
         mapI = tempMapVect;
         inn.close();
         mapFloatCreate();
+        printf("\nPreMapTextLoad\n");
+        loadMapSpriteSheet();
+        printf("\nPostMapTextLoad\n");
     }
     else { printf("\n\nERROR: Couldnt find level file, check that it is in the right place.\n\n"); exit(EXIT_FAILURE); }
 }
@@ -46,7 +52,6 @@ Map::Map(std::string filePath) {
  *  @see Pellet::checkCoords(int XY);
  */
 void Map::mapFloatCreate() {
-    XYshift = getXYshift();
     for (int i = 0; i < height; i++) { // creates map
         for (int j = 0; j < width; j++) {
             if (mapI[i][j] == 1) {
@@ -59,7 +64,7 @@ void Map::mapFloatCreate() {
                     for (int corners = 0; corners < 4; corners++) {
                         loop = loopO[counter];
                         counter++;
-                        if (2 == corners) { height = 0.15f; };
+                        if (2 == corners) { height = 0.1f; };
                         for (int point = 0; point < 3; point++) {
                             mapF.push_back(mCamHolder->getCoordsWithInt(i, j, loop, height, XYshift));
                             loop++;
@@ -113,10 +118,10 @@ int Map::findWhatWalls(const int x, const int y) {
     int wallType = 0;
     for (int i = 0; i < 4; i++) {
         switch (i) {
-        case 0: if ((y + 1) < height) { if ((mapI[(y + 1)][x] == 0) || mapI[(y + 1)][x] == 2) { wallType += 1; } } break;
-        case 1: if (0 < (x - 1)) { if ((mapI[y][(x - 1)] == 0) || mapI[y][(x - 1)] == 2) { wallType += 2; } } break;
-        case 2: if ((x + 1) < width) { if ((mapI[y][(x + 1)] == 0) || mapI[y][(x + 1)] == 2) { wallType += 4; } } break;
-        case 3: if (0 < (y - 1)) { if ((mapI[(y - 1)][x] == 0) || mapI[(y - 1)][x] == 2) { wallType += 8; } } break;
+        case 0: if ((y + 1) < height)   { if ((mapI[(y + 1)][x] == 0) || mapI[(y + 1)][x] == 2) { wallType += 1; } } break;
+        case 1: if (0 < (x - 1))        { if ((mapI[y][(x - 1)] == 0) || mapI[y][(x - 1)] == 2) { wallType += 2; } } break;
+        case 2: if ((x + 1) < width)    { if ((mapI[y][(x + 1)] == 0) || mapI[y][(x + 1)] == 2) { wallType += 4; } } break;
+        case 3: if (0 < (y - 1))        { if ((mapI[(y - 1)][x] == 0) || mapI[(y - 1)][x] == 2) { wallType += 8; } } break;
         }
     }
     return wallType;
@@ -199,7 +204,7 @@ std::vector<int> Map::loopOrder(int num) {
     return loopy;
 };
 
-void Map::callCompileMapShader(){
+void Map::compileMapShader(){
     mapShaderProgram = CompileShader(   mapVertexShaderSrc,
                                         mapFragmentShaderSrc);
 
@@ -207,11 +212,11 @@ void Map::callCompileMapShader(){
     glEnableVertexAttribArray(mPosAttrib);
     glVertexAttribPointer(mPosAttrib, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), 0);
 
+    callCreateMapVao();
+
     GLuint mtexAttrib = glGetAttribLocation(mapShaderProgram, "mTexcoord");
     glEnableVertexAttribArray(mtexAttrib);
     glVertexAttribPointer(mtexAttrib, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
-
-    callCreateMapVao();
 }
 
 void Map::callCreateMapVao() {
@@ -295,7 +300,6 @@ std::vector<int> Map::spawnGhost(const int ghostCount) {
     do {
         for (int g = 0; g < ghostCount; g++) {
             int randPos;
-
             randPos = (rand() % pelletAmount);
             formerPositions.push_back(randPos);
         }
@@ -320,8 +324,8 @@ std::vector<int> Map::spawnGhost(const int ghostCount) {
 void Map::drawMap() {
     auto mapTextureLocation = glGetUniformLocation(mapShaderProgram, "u_mapTexture");
     glUseProgram(mapShaderProgram);
-    glUniform1i(mapTextureLocation, 2);
+    glUniform1i(mapTextureLocation, 1);
     mCamHolder->applycamera(mapShaderProgram, XYshift.first, XYshift.second);
     glBindVertexArray(mapVAO);
-    glDrawElements(GL_TRIANGLES, mapF.size()*sizeof(float), GL_UNSIGNED_INT, (const void*)0);
+    glDrawElements(GL_TRIANGLES, mapF.size(), GL_UNSIGNED_INT, (const void*)0);
 }

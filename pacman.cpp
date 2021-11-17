@@ -79,7 +79,7 @@ void Pacman::updateLerp() {
  *  @see      Character:: checkPellet();
  *  @see      Character:: AIupdateVertice();
  */
-void Pacman::callCompileShader() {
+void Pacman::compilePacShader() {
     shaderProgram = CompileShader(  playerVertexShaderSrc,
                                     playerFragmentShaderSrc);
 
@@ -227,7 +227,6 @@ GLuint Pacman::compilePacman() {
 
 void Pacman::drawPacman() {
     setVAO(compilePacman());
-
     GLuint ptexAttrib = glGetAttribLocation(shaderProgram, "pTexcoord");
     glEnableVertexAttribArray(ptexAttrib);
     glVertexAttribPointer(ptexAttrib, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
@@ -239,7 +238,7 @@ void Pacman::drawPacman() {
     glBindVertexArray(characterVAO);
     glUniform1i(playerTextureLocation, 0);
     transformPacman();
-    CamHolder->applycamera(shaderProgram, XYshift.first, XYshift.second);
+    CamHolder->applycamera(shaderProgram, WidthHeight.first, WidthHeight.second);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (const void*)0);
     CleanVAO(characterVAO);
 }
@@ -257,7 +256,7 @@ void Pacman::transformPacman() {
     float newY = (((1 - lerpProg) * lerpStart[1]) + (lerpProg * lerpStop[1]));
 
     //LERP performed in the shader for the pacman object
-    glm::mat4 translation = glm::translate(glm::mat4(1), glm::vec3(newX, newY, 0.2f));
+    glm::mat4 translation = glm::translate(glm::mat4(1), glm::vec3(newX, newY, 0.01f));
     moveCamera(newX - 1, newY);
     GLuint transformationmat = glGetUniformLocation(shaderProgram, "u_TransformationMat");
 
@@ -292,6 +291,8 @@ void Pacman::moveCamera(float x, float y) {
  *  @return returns VAO gotten from CreateObject func
  */
 void Pacman::checkForKeyUpdate() {
+    setCard(CamHolder->getCard());
+
     int newPotDir = CamHolder->getNewDesDir();
     if (newPotDir != -10){
         if (getLegalDir(newPotDir)) {

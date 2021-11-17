@@ -15,9 +15,10 @@
  // -----------------------------------------------------------------------------
 class Camera {  
 private:
-    glm::vec3 cameraPos = glm::vec3(-1.0f, 0.0f, 0.1f);
+    glm::vec3 cameraPos = glm::vec3(-1.0f, 0.0f, 0.05f);
     glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, 0.0f);
     glm::vec3 cameraUp = glm::vec3(0.0f, 0.0f, 0.5f);
+    std::vector<std::vector<int>> mapHolder;
 
     bool firstMouse = true;
     float yaw   = 0.0f;
@@ -40,18 +41,9 @@ public:
 
     bool getFirstMouse() { return firstMouse; };
     void disableFirstMouse() { firstMouse = false; };
-    float getYaw()   { return yaw; };
-    void  setYaw(float newYaw)      { yaw = newYaw; };
-    float getpitch() { return pitch; };
-    void  setpitch(float newPitch)  { pitch = newPitch; };
-    float getlastX() { return yaw; };
-    void  setlastX(float newLastX)  { lastX = newLastX; };
-    float getlastY() { return lastY; };
-    void  setlastY(float newLastY)  { lastY = newLastY; };
-    float getfov()   { return fov; };
-    //void  setfov(float newFov)      { fov = newFov; };
     int   getCard() { return pacCard; };
     void  setCard(int newCard)      { pacCard = newCard; }
+    int   getCamMapVal(int x, int y) { return mapHolder[y][x]; };
     int   getNewDesDir() { if (keyCalled) { keyCalled = false; return pacDesDir; } else return -10; };
     void  setNewDesDir(int newDir) { pacDesDir = newDir; keyCalled = true; }
 
@@ -59,6 +51,8 @@ public:
     int     checkCardinal(const float xRot, const float yRot);
     GLfloat getCoordsWithInt(int y, int x, int loop, float layer, std::pair<float, float> shift);
     void    applycamera(const GLuint shader, const float width, const float height);
+    void    recieveMap(std::vector<std::vector<int>> valueMap) { mapHolder = valueMap; }
+    void    mouseMoveCamera(const double xpos, const double ypos);
 };
 
 #endif

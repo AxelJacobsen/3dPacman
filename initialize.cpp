@@ -8,6 +8,9 @@
 
 #include "initialize.h"
 
+Camera* cameraHolder;
+
+
 GLFWwindow* initializeWindow() {
 
     // Initialization of GLFW
@@ -58,8 +61,6 @@ GLFWwindow* initializeWindow() {
     return window;
 }
 
-Camera* cameraHolder;
-
 // -----------------------------------------------------------------------------
 // MessageCallback (for debugging purposes)
 // -----------------------------------------------------------------------------
@@ -83,54 +84,11 @@ MessageCallback(GLenum source,
 // -----------------------------------------------------------------------------
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
-    glm::vec3 tempCameraFront = cameraHolder->getCamFront();
-    float tempYaw = cameraHolder->getYaw();
-    float tempPitch = cameraHolder->getpitch();
-    float tempLastX = cameraHolder->getlastX();
-    float tempLastY = cameraHolder->getlastY();
-    ;
-    if (cameraHolder->getFirstMouse())
-    {
-        tempLastX = xpos;
-        tempLastY = ypos;
-        cameraHolder->disableFirstMouse();
-    }
-
-    float xoffset = xpos - tempLastX;
-    float yoffset = tempLastY - ypos; // reversed since y-coordinates go from bottom to top     
-    tempLastX = xpos;
-    tempLastY = ypos;
-
-    float sensitivity = 0.1f; // change this value to your liking
-    xoffset *= sensitivity;
-    yoffset *= sensitivity;
-
-    tempYaw += xoffset;
-    tempPitch += yoffset;
-
-    // make sure that when pitch is out of bounds, screen doesn't get flipped
-    if (tempPitch > 89.0f)
-        tempPitch = 89.0f;
-    if (tempPitch < -89.0f)
-        tempPitch = -89.0f;
-
-    glm::vec3 front;
-    front.z = sin(glm::radians(tempPitch));
-    front.x = -cos(glm::radians(tempYaw)) * cos(glm::radians(tempPitch));
-    front.y = sin(glm::radians(tempYaw)) * cos(glm::radians(tempPitch));
-    int temp = cameraHolder->checkCardinal(front.x, front.y);
-    if (temp != -1) { cameraHolder->setCard(temp); }
-    cameraHolder->setCamFront(glm::normalize(front));
-    cameraHolder->setYaw(tempYaw);
-    cameraHolder->setpitch(tempPitch);
-    cameraHolder->setlastX(tempLastX);
-    cameraHolder->setlastY(tempLastY);
+    cameraHolder->mouseMoveCamera(xpos, ypos);
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
-    // make sure the viewport matches the new window dimensions; note that width and
-    // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
 }
 

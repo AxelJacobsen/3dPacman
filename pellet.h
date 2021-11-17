@@ -23,12 +23,13 @@ private:
     GLuint pelletShaderProgram;
     GLuint pelletVAO;
     std::pair<float, float> XYshift{ 0,0 };
+    std::pair<int, int> WidthHeight{ 0,0 };
     
     Camera* pCamHolder;
 
 public:
     Pellet() {};
-    Pellet(int x, int y);
+    Pellet(int x, int y, std::pair<float, float> shift);
     ~Pellet() {
         delete vertices;
         delete XYpos;
@@ -47,8 +48,8 @@ public:
     void   setVAO(const GLuint vao);
     GLuint getVAO();
     GLuint getShader();
-    void setXYshift(std::pair<float, float> XYvalues) { XYshift = XYvalues; };
-    void getPelletCameraPointer(Camera* newCamera) { pCamHolder = newCamera; };
+    void  getPelletCameraPointer(Camera* newCamera) { pCamHolder = newCamera; };
+    void  pelletSetWidthHeight(std::pair<int, int> widthHeidht) { WidthHeight = widthHeidht; };
 };
 
 #endif

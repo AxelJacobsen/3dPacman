@@ -29,13 +29,14 @@ public:
 
     virtual void changeDir();
     virtual void updateLerp();
-    virtual void callCompileShader();
+    void compilePacShader();
     void updateDir(int outDir);
     void checkPellet();
     void callGhostCollision();
     void pacAnimate();
     void updateCard(int newDir);
     int  getCard();
+    void setCard(int card) { cardDir = card; };
     void loadPacSpriteSheet();
     void deletePacSpriteSheet();
     bool updatePelletState(bool change);

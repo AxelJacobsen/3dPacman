@@ -16,11 +16,17 @@
 Ghost::Ghost(int x, int y, bool ai) {
     XYpos[0] = x, XYpos[1] = y;
     AI = ai;
+    printf("PreDir\n");
     dir = ghostGetRandomDir();
+    dir = 9;
+    printf("PostDir\n");
     prevDir = dir;
     AIdelay = dir;
+    printf("PreCharInit\n");
     Character::characterInit();
+    printf("PostCharInit\n");
     ghostAnimate();
+    printf("PostAnimate\n");
 };
 
 /**
@@ -63,7 +69,7 @@ void Ghost::updateLerp() {
  *  @see      Character:: checkPellet();
  *  @see      Character:: AIupdateVertice();
  */
-void Ghost::callCompileShader() {
+void Ghost::compileGhostShader() {
     shaderProgram = CompileShader(  ghostVertexShaderSrc,
                                     ghostFragmentShaderSrc);
 }
@@ -83,7 +89,7 @@ bool Ghost::checkGhostCollision(float pacX, float pacY) {
     std::pair<float,float> math        = { (pacCoords.first - ghostCoords.first),
                                             (pacCoords.second - ghostCoords.second)};
     float length = sqrt((math.first * math.first) + (math.second * math.second));
-    if (length < 0) { length * -1; }
+    if (length < 0) { length *= -1; }
     if (length < ((XYshift.first + XYshift.second) / 3)) { return true; }
     else { false; }
 }
@@ -96,6 +102,8 @@ bool Ghost::checkGhostCollision(float pacX, float pacY) {
  */
 int Ghost::ghostGetRandomDir() {
     int temp = 0;
+    time_t t;
+    srand((unsigned)time(&t));
     do {
         temp = (rand() % 4);
         switch (temp)

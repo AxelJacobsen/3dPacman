@@ -12,7 +12,8 @@
  *  @param    y - pellets designated y
  *  @see      Pellet::initCoords();
  */
-Pellet::Pellet(int x, int y) {
+Pellet::Pellet(int x, int y, std::pair<float, float> shift) {
+    XYshift = shift;
     XYpos[0] = x; XYpos[1] = y;
     initCoords();
 };
@@ -28,7 +29,7 @@ void Pellet::initCoords() {
     float Yquart = XYshift.second / 3.0f;
     for (int y = 0; y < 4; y++) {
         for (int x = 0; x < 3; x++) {
-            vertices[loop] = (pCamHolder->getCoordsWithInt(XYpos[1], XYpos[0], loop, 0, XYshift));
+            vertices[loop] = (pCamHolder->getCoordsWithInt(XYpos[1], XYpos[0], loop, 0.0f, XYshift));
             switch (loop) {
             case 0:  vertices[loop] += Xquart; break;
             case 1:  vertices[loop] += Yquart; break;
@@ -96,6 +97,10 @@ bool Pellet::isEnabled() {
 void Pellet::callCompilePelletShader() {
     pelletShaderProgram = CompileShader(    pelletVertexShaderSrc,
                                             pelletFragmentShaderSrc);
+    
+    GLint pelposAttrib = glGetAttribLocation(pelletShaderProgram, "pelPosition");
+    glEnableVertexAttribArray(pelposAttrib);
+    glVertexAttribPointer(pelposAttrib, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
 }
 
 /**
@@ -107,7 +112,7 @@ void Pellet::callCompilePelletShader() {
 void Pellet::drawPellets(const int size) {
     auto pelletVertexColorLocation = glGetUniformLocation(pelletShaderProgram, "u_Color");
     glUseProgram(pelletShaderProgram);
-    pCamHolder->applycamera(pelletShaderProgram, XYshift.first*3 ,XYshift.second*3 );
+    pCamHolder->applycamera(pelletShaderProgram, WidthHeight.second, WidthHeight.first );
     glBindVertexArray(pelletVAO);
     glUniform4f(pelletVertexColorLocation, 0.8f, 0.8f, 0.0f, 1.0f);
     glDrawElements(GL_TRIANGLES, int(6 * size), GL_UNSIGNED_INT, (const void*)0);

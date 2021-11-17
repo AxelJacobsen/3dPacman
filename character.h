@@ -37,6 +37,7 @@ protected:
             characterVAO,
             textureSheet;
     std::pair<float, float> XYshift{ 0,0 };
+    std::pair<int, int> WidthHeight{ 0,0 };
     //Ghost values
     bool    AI = false;                 //Decides whether object is pacman or ghost
 
@@ -64,10 +65,13 @@ public:
     void   setVAO(const GLuint vao);
     GLuint getShader();
     GLuint getVAO();
+    void  callCleanVAO() { CleanVAO(characterVAO); };
     int   getVertSize() { return sizeof(vertices) / sizeof(vertices[0]); }
     void  callCreateCharacterVao(GLfloat* object, int size, const int stride);
     void  setXYshift(std::pair<float, float> XYvalues) { XYshift = XYvalues; };
+    void  setWidthHeight(std::pair<int, int> widthHeidht) { WidthHeight = widthHeidht; };
     void  getCameraPointer(Camera* newCamera) { CamHolder = newCamera; };
+    std::pair<int, int> getXY() { std::pair<int, int> temp = { XYpos[0], XYpos[1] }; return temp; }
 };
 
 #endif;

@@ -33,10 +33,9 @@ int Camera::checkCardinal(const float xRot, const float yRot) {
 GLfloat Camera::getCoordsWithInt(int y, int x, int loop, float layer, std::pair<float, float> shift) {
     float Xshift = shift.first;
     float Yshift = shift.second;
-
     GLfloat tempXs, tempYs;
     if (x == 0 && y == 0) { tempXs = 0, tempYs = 0; }
-    else { tempXs = (Xshift * x), tempYs = (Yshift * y); }
+    else { tempXs = (Xshift * float(x)), tempYs = (Yshift * float(y)); }
 
     switch (loop) {
     case 0:   tempXs;             return (tempXs - 1.0f);  // Bot Left
@@ -58,14 +57,54 @@ GLfloat Camera::getCoordsWithInt(int y, int x, int loop, float layer, std::pair<
  *  Applies camera tranformation
  */
 void Camera::applycamera(const GLuint shader, const float width, const float height) {
-    int spriteSize = 64;
+    const int spriteSize = 64;
+    
     // pass projection matrix to shader (note that in this case it could change every frame)
-    glm::mat4 projection = glm::perspective(glm::radians(fov), (float)(width * spriteSize / 3) / (float)(height * spriteSize / 3), 0.001f, 2.0f);
+    glm::mat4 projection = glm::perspective(glm::radians(fov), (float)(width) / (float)(height), 0.001f, 2.0f);
     GLuint projMat = glGetUniformLocation(shader, "projection");
     glUniformMatrix4fv(projMat, 1, false, glm::value_ptr(projection));
-
+    
     // camera/view transformation
     glm::mat4 view = glm::lookAt(cameraPos, (cameraPos + cameraFront), cameraUp);
     GLuint viewMat = glGetUniformLocation(shader, "view");
     glUniformMatrix4fv(viewMat, 1, false, glm::value_ptr(view));
+}
+
+/*
+*
+*/
+void Camera::mouseMoveCamera(const double xpos, const double ypos) {
+    if (firstMouse)
+    {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top     
+    lastX = xpos;
+    lastY = ypos;
+
+    float sensitivity = 0.1f; // change this value to your liking
+    xoffset *= sensitivity;
+    yoffset *= sensitivity;
+
+    yaw += xoffset;
+    pitch += yoffset;
+
+    // make sure that when pitch is out of bounds, screen doesn't get flipped
+    if (pitch > 89.0f)
+        pitch = 89.0f;
+    if (pitch < -89.0f)
+        pitch = -89.0f;
+
+    glm::vec3 front;
+    front.z = sin(glm::radians(pitch));
+    front.x = -cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+    front.y = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+    int temp = checkCardinal(front.x, front.y);
+    if (temp != -1) { setCard(temp); }
+    cameraFront = glm::normalize(front);
+
 }

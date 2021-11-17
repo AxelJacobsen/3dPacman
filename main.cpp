@@ -24,8 +24,7 @@
 /**
  *  main function
  */
-int main()
-{
+int main(){
   
     //Container definition
     std::vector<Map*>		Maps;		///< Contains only map, permits adding more maps in the future
@@ -36,41 +35,66 @@ int main()
 
     // Creates coordinates for map
     auto window = initializeWindow();
+    recieveCamera(cameraAdress);
     if (window == nullptr) { return EXIT_FAILURE; }
 
     //create map
     Maps.push_back(new Map("../../../../levels/level0"));
     std::pair<float, float>XYshift = Maps[0]->getXYshift();
     Maps[0]->getMapCameraPointer(cameraAdress);
+    Maps[0]->compileMapShader();
+    cameraAdress->recieveMap(Maps[0]->getIntMap());
 
     //spawn pacman
     Pacmans.push_back(new Pacman(Maps[0]->getPacSpawnPoint()));
+    Pacmans[0]->compilePacShader();
+    Pacmans[0]->setWidthHeight(Maps[0]->getWidthHeight());
     Pacmans[0]->setXYshift(XYshift);
     Pacmans[0]->getCameraPointer(cameraAdress);
 
     //spawn pellets
     std::pair<int, int> WidthHeight = Maps[0]->getWidthHeight();
-    for (int x = 0; x < WidthHeight.first; x++) {
-        for (int y = 0; y < WidthHeight.second; y++) {
-            if (Maps[0]->getMapVal(x, y) == 0) { Pellets.push_back(new Pellet(x, y)); }
+    for (int y = 0; y < WidthHeight.second; y++) {
+        for (int x = 0; x < WidthHeight.first; x++) {
+            if (Maps[0]->getMapVal(x, y) == 0) { Pellets.push_back(new Pellet(x, y, XYshift)); Maps[0]->addPelletcount(); }
         }
     }
-    Pellets[0]->setXYshift(XYshift);
+    Pellets[0]->pelletSetWidthHeight(Maps[0]->getWidthHeight());
     Pellets[0]->getPelletCameraPointer(cameraAdress);
-    //spawn ghosts
-    int ghostAmount = 4;
-    std::vector<int>ghostPos = Maps[0]->spawnGhost(ghostAmount);
-    int count = 0;
+
+    int pelletStride = 3;
+    std::vector<float> pelletContainer; //initial fill
     for (auto& it : Pellets) {
-        for (int l = 0; l < ghostAmount; l++) {
-            if (count == ghostPos[l]) {
-                Ghosts.push_back(new Ghost(it->checkCoords(0), it->checkCoords(1), true));
-            }
+        for (int vert = 0; vert < Pellets[0]->getVertSize(); vert++) {
+            pelletContainer.push_back(it->getVertCoord(vert));
         }
-        count++;
     }
-    Ghosts[0]->setXYshift(XYshift);
-    Ghosts[0]->getCameraPointer(cameraAdress);
+    Pellets[0]->callCreatePelletVAO((&pelletContainer[0]), pelletContainer.size() * sizeof(pelletContainer[0]), pelletStride);
+    Pellets[0]->callCompilePelletShader();
+
+    //spawn ghosts
+    int ghostAmount = 0;
+    printf("\n\PreSpawnGhost\n\n");
+    std::vector<int>ghostPos;
+    if (0 < ghostAmount) { ghostPos = Maps[0]->spawnGhost(ghostAmount); 
+        printf("\n\PostSpawnGhost\n\n");
+        int count = 0;
+        for (auto& it : Pellets) {
+            for (int l = 0; l < ghostAmount; l++) {
+                if (count == ghostPos[l]) {
+                    printf("GhostGen: %i\n", l);
+                    Ghosts.push_back(new Ghost(it->checkCoords(0), it->checkCoords(1), true));
+                    printf("PostGhostGen\n");
+                }
+            }
+            count++;
+        }
+        Ghosts[0]->setXYshift(XYshift);
+        Ghosts[0]->getCameraPointer(cameraAdress);
+        Ghosts[0]->compileGhostShader();
+        printf("\n\nGhostsINIT\n\n");
+    }
+    std::vector<float> ghostContainer;  //initial fill
 
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glEnable(GL_MULTISAMPLE);
@@ -81,15 +105,8 @@ int main()
     float deltaTime = 0.0f;	// time between current frame and last frame
     float lastFrame = 0.0f;
     float delay = 0.015f;
-
-    std::vector<float> pelletContainer; //initial fill
-    std::vector<float> ghostContainer; //initial fill
-    for (auto& it : Pellets) {
-        for (int vert = 0; vert < Pellets[0]->getVertSize(); vert++) {
-            pelletContainer.push_back(it->getVertCoord(vert));
-        }
-    }
-
+    
+    printf("\n\PreWhile\n\n");
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -98,30 +115,33 @@ int main()
         currentTime = glfwGetTime();
         deltaTime = currentTime - lastFrame;
         lastFrame = currentTime;
-
+        /*
         //Refresh Ghosts
+        printf("Check 1\n");
         for (auto& it : Ghosts) {
             for (int vert = 0; vert < Ghosts[0]->getVertSize(); vert++) {
                 ghostContainer.push_back(it->getVertCoord(vert));
             }
         }
-
+        */
+        printf("Check 2\n");
         if (Pacmans[0]->getRun()) {
+            printf("PreDrawPellets: %i\n", Pellets.size());
             Pellets[0]->drawPellets(Pellets.size());
             Pacmans[0]->drawPacman();
-            
-            if (0 < Ghosts.size()) { 
-                Ghosts[0]->callCreateCharacterVao((&ghostContainer[0]), Ghosts.size(), 5);
-                Ghosts[0]->drawGhosts(ghostAmount); 
-            }
-            Maps[0]->drawMap();
+            printf("Check 2\n");
 
+            
             if (Pacmans[0]->updatePelletState(false)) {//fills Pelletcontainer
                 for (auto & it: Pellets){
+                    printf("%i ", Pellets[0]->getVertSize());
                     for (int vert = 0; vert < Pellets[0]->getVertSize(); vert++) {
                         pelletContainer.push_back(it->getVertCoord(vert));
+                        printf("%f\t", it->getVertCoord(vert));
+                        if (vert % 3 == 0) { printf("\n"); }
                     }
                 }
+                printf("Check 3\n");
                 Pellets[0]->cleanPelletVAO();
                 Pellets[0]->callCreatePelletVAO((&pelletContainer[0]), Pellets.size(), 3);
                 Pacmans[0]->updatePelletState(true);
@@ -129,8 +149,21 @@ int main()
                 if (Pellets.size() <= Pacmans[0]->getPellets()) {
                     Pacmans[0]->setRun(false);
                 }
+                printf("Check 4\n");
             }
+
+            printf("Check 5\n");
+            if (0 < ghostAmount) {
+                Ghosts[0]->callCleanVAO();
+                Ghosts[0]->callCreateCharacterVao((&ghostContainer[0]), Ghosts.size(), 5);
+                Ghosts[0]->drawGhosts(ghostAmount);
+                printf("Check 6\n");
+            }
+            printf("Check 7\n");
+            
+            Maps[0]->drawMap();
         }
+        
         //LERP Update
         if (currentTime > (frequency + delay) && Pacmans[0]->getRun()) {
             frequency = currentTime;
@@ -140,19 +173,22 @@ int main()
             if (Pacmans[0]->getAnimDel() == 0) { animate = true; Pacmans[0]->updateAnimDel(3, true);
             }  //the effective speed of animation
             else { Pacmans[0]->updateAnimDel(-1, false); }
-
+            Pacmans[0]->checkForKeyUpdate();
             Pacmans[0]->updateLerp();
 
             if (animate) Pacmans[0]->pacAnimate();
-            for (auto& ghostIt : Ghosts) {
-                ghostIt->updateLerp();
-                if (animate) ghostIt->ghostAnimate();
+            if (0 < ghostAmount){
+                for (auto& ghostIt : Ghosts) {
+                    ghostIt->updateLerp();
+                    if (animate) ghostIt->ghostAnimate();
+                }
+                std::pair<int, int>pacPos = Pacmans[0]->getXY();
+                if (Ghosts[0]->checkGhostCollision(pacPos.first, pacPos.second)) { Pacmans[0]->setRun(false); }
             }
-            //if (Pacmans[0]->checkGhostCollision()) { Pacmans[0]->setRun(false); }
-
+            
             glfwSwapBuffers(window);
         }
-
+        
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
             break;
         }

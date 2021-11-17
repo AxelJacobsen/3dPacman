@@ -66,10 +66,9 @@ bool Character::getLegalDir(int dir) {
     case 9: testPos[0] += 1; break;      //RIGHT test
     }
 
-    if ((testPos[0] < (XYshift.first * 3) && testPos[1] < (XYshift.second * 3)) && (0 <= testPos[0] && 0 <= testPos[1])) {
-        //if (Maps[0]->getMapVal(testPos[0], testPos[1]) != 1) { return true; }
-        //else { return false; }
-        return true;
+    if ((testPos[0] < (WidthHeight.first) && testPos[1] < (WidthHeight.second)) && (0 <= testPos[0] && 0 <= testPos[1])) {
+        if (CamHolder->getCamMapVal(testPos[0], testPos[1]) != 1) { return true; }
+        else { return false; }
     }
     else { return false; }    //incase moving outside map illegal untill further notice
     return false;
@@ -98,21 +97,15 @@ void Character::getLerpCoords() {
  *  @see      Character:: getLerpCoords();
  */
 void Character::changeDir() {
-    /*
-    bool legal = true;
-
-    if (AI && AIdelay == 0) { dir = getRandomAIdir(); AIdelay = ((rand() + 4) % 10); }
-    else {
-        AIdelay--;
-        legal = getLegalDir(dir);
-    }
+    
+    bool legal = getLegalDir(dir);
 
     if (prevDir == 0) { prevDir = dir; }    //Ensures that prevDir can never be 0 even if you hard-code it :)
 
     int modDir = prevDir;                   //New mod value used to ensure snappier movement
     if (legal && (dir < prevDir) && (prevDir % dir == 0)) { modDir = dir; } //This fixes problem where smaller numbers got mod'd by a larger number
 
-    if (legal && (dir % modDir == 0) && dir != prevDir && !AI) {   //Incase you are trying to turn 180 degrees this procs
+    if (legal && (dir % modDir == 0) && dir != prevDir) {   //Incase you are trying to turn 180 degrees this procs
         float coordHolder[2];
 
         coordHolder[0] = lerpStop[0];      coordHolder[1] = lerpStop[1];
@@ -133,7 +126,7 @@ void Character::changeDir() {
         lerpProg = lerpStep / 2.0f;
         prevDir = dir;
     }
-    */
+    
 };
 
 /**
@@ -144,15 +137,12 @@ void Character::changeDir() {
  *  @see      Character:: AIupdateVertice();
  */
 void Character::updateLerp() {
-    /*
     if (lerpProg > 1 || lerpProg < 0) { changeDir(); }
     else { lerpProg += lerpStep; }
 
     if (0.5f <= lerpProg && lerpProg <= 0.6 && !AI) {
-        checkPellet();
+        //checkPellet();
     }
-    if (AI) { AIupdateVertice(); }
-    */
 }
 
 /**
