@@ -13,6 +13,7 @@
 #include "shaders/pelletsShad.h"
 #include "shaders/ghostShad.h"
 #include "shaders/playerShad.h"
+#include "shaders/modelShader.h"
 
  //Library Inclusion
 #include <glad/glad.h>

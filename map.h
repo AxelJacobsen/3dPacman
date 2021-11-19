@@ -46,7 +46,7 @@ public:
     GLuint getMapSprite()   { return mapSpriteSheet; };
     int    getMapSize()     { return mapF.size(); };
     int    getMapVal(int x, int y) { return mapI[y][x]; };
-    void   addPelletcount() { pelletAmount++; }
+    void   setPelletAmount(int size) { pelletAmount = size; }
     int    getPelletAmount() { return pelletAmount; };
 
     std::pair<float, float> getXYshift() { return XYshift; }

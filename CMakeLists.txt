@@ -11,13 +11,16 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 add_subdirectory(glm)
 add_subdirectory(glfw)
 add_subdirectory(glad)
+add_subdirectory(tinyobjloader)
 
 add_executable(Pacman
 	main.cpp
 	shaders/playerShad.h
 	shaders/mapShad.h
-    shaders/ghostShad.h
+    	shaders/ghostShad.h
 	shaders/pelletsShad.h 
+	shaders/modelShader.h
+	
 	include/glutil.h
 	"character.h"
 	"character.cpp"
@@ -30,8 +33,6 @@ add_executable(Pacman
 	"globFunc.cpp"
 	"initialize.h"
 	"initialize.cpp"
-	
-	
 	"ghost.h"
 	"ghost.cpp"
 	"pacman.h"
@@ -44,6 +45,7 @@ target_link_libraries(Pacman
 	glad
 	glfw
 	glm
+	tinyobjloader
 	OpenGL::GL)
 
   target_include_directories(${PROJECT_NAME}

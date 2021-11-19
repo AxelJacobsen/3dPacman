@@ -21,7 +21,7 @@ private:
     std::vector<std::vector<int>> mapHolder;
 
     bool firstMouse = true;
-    float yaw   = 0.0f;
+    float yaw   = 180.0f;
     float pitch = 0.0f;
     float lastX = 0;
     float lastY = 0;
@@ -43,7 +43,7 @@ public:
     void disableFirstMouse() { firstMouse = false; };
     int   getCard() { return pacCard; };
     void  setCard(int newCard)      { pacCard = newCard; }
-    int   getCamMapVal(int x, int y) { return mapHolder[y][x]; };
+    int   getCamMapVal(int x, int y) {  return mapHolder[y][x]; };
     int   getNewDesDir() { if (keyCalled) { keyCalled = false; return pacDesDir; } else return -10; };
     void  setNewDesDir(int newDir) { pacDesDir = newDir; keyCalled = true; }
 

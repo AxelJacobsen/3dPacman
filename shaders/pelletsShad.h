@@ -8,12 +8,12 @@ static const std::string pelletVertexShaderSrc = R"(
 
 /** Inputs */
 in vec3 pelPosition;
-//layout(location = 0) in vec3 pelPosition;
 
 //We specify our uniforms. We do not need to specify locations manually, but it helps with knowing what is bound where.
 uniform mat4 view;
 uniform mat4 projection;
 
+uniform mat4 MVP;
 
 void main()
 {

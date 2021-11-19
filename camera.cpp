@@ -106,5 +106,4 @@ void Camera::mouseMoveCamera(const double xpos, const double ypos) {
     int temp = checkCardinal(front.x, front.y);
     if (temp != -1) { setCard(temp); }
     cameraFront = glm::normalize(front);
-
 }

@@ -23,7 +23,6 @@ Map::Map(std::string filePath) {
         int temp;
         inn >> temp;
         while (column < height) {
-            //int Yvalue = (column);
             int Yvalue = (height - 1 - column);
             if (row < width) {
                 tempMapVect[Yvalue][row] = temp;
@@ -35,9 +34,7 @@ Map::Map(std::string filePath) {
         mapI = tempMapVect;
         inn.close();
         mapFloatCreate();
-        printf("\nPreMapTextLoad\n");
         loadMapSpriteSheet();
-        printf("\nPostMapTextLoad\n");
     }
     else { printf("\n\nERROR: Couldnt find level file, check that it is in the right place.\n\n"); exit(EXIT_FAILURE); }
 }
@@ -273,7 +270,7 @@ GLuint Map::CreateMap(float size) {
 }
 
 void Map::loadMapSpriteSheet() {
-    mapSpriteSheet = load_opengl_texture("assets/wallTexture.png", 1);
+    mapSpriteSheet = load_opengl_texture("assets/wallTexture.png", 2);
 }
 
 
@@ -299,15 +296,18 @@ std::vector<int> Map::spawnGhost(const int ghostCount) {
     bool noDouble = false;
     do {
         for (int g = 0; g < ghostCount; g++) {
-            int randPos;
-            randPos = (rand() % pelletAmount);
+            int randPos = 0;
+            randPos = rand() % pelletAmount;
             formerPositions.push_back(randPos);
         }
         noDouble = true;
-        for (int n = 0; n < ghostCount; n++) {
-            for (int m = (n + 1); m < (ghostCount); m++) {
-                if (formerPositions[n] == formerPositions[m]) {
-                    noDouble = false;
+        if (1 < ghostCount) {
+            for (int n = 0; n < ghostCount; n++) {
+                for (int m = (n + 1); m < (ghostCount); m++) {
+                    if (formerPositions[n] == formerPositions[m]) {
+                        noDouble = false;
+                        formerPositions.clear();
+                    }
                 }
             }
         }
@@ -324,7 +324,7 @@ std::vector<int> Map::spawnGhost(const int ghostCount) {
 void Map::drawMap() {
     auto mapTextureLocation = glGetUniformLocation(mapShaderProgram, "u_mapTexture");
     glUseProgram(mapShaderProgram);
-    glUniform1i(mapTextureLocation, 1);
+    glUniform1i(mapTextureLocation, 2);
     mCamHolder->applycamera(mapShaderProgram, XYshift.first, XYshift.second);
     glBindVertexArray(mapVAO);
     glDrawElements(GL_TRIANGLES, mapF.size(), GL_UNSIGNED_INT, (const void*)0);

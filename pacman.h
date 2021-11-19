@@ -24,15 +24,13 @@ private:
          run = true;
 public:
     Pacman() {};
-    Pacman(std::pair<int,int> XY);
+    Pacman(std::pair<int,int> XY, std::pair<float, float> xyshift);
     ~Pacman() {};
 
     virtual void changeDir();
     virtual void updateLerp();
     void compilePacShader();
     void updateDir(int outDir);
-    void checkPellet();
-    void callGhostCollision();
     void pacAnimate();
     void updateCard(int newDir);
     int  getCard();
@@ -51,6 +49,7 @@ public:
     void transformPacman();
     void moveCamera(float x, float y);
     void checkForKeyUpdate();
+    float getLerpProg() { return lerpProg; }
 };
 
 #endif

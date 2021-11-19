@@ -5,28 +5,60 @@
 // ---------------------------------------------------------------------------- -
 // COMPILE SHADER
 // -----------------------------------------------------------------------------
-GLuint CompileShader(const std::string & vertexShaderSrc,
-    const std::string & fragmentShaderSrc)
+GLuint CompileShader(const std::string& vertexShaderSrc,
+    const std::string& fragmentShaderSrc)
 {
+
     auto vertexSrc = vertexShaderSrc.c_str();
     auto fragmentSrc = fragmentShaderSrc.c_str();
 
     auto vertexShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertexShader, 1, &vertexSrc, nullptr);
     glCompileShader(vertexShader);
+    GLint isCompiled = 0;
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &isCompiled);
+    if (!isCompiled)
+    {
+        GLint maxLength = 0;
+        glGetShaderiv(vertexShader, GL_INFO_LOG_LENGTH, &maxLength);
 
+        // The maxLength includes the NULL character
+        std::vector<GLchar> errorLog(maxLength);
+        glGetShaderInfoLog(vertexShader, maxLength, &maxLength, &errorLog[0]);
+
+        // Provide the infolog in whatever manor you deem best.
+        std::cout << "Vertex Shader" << errorLog.data() << std::endl;
+        std::cin.get();
+    }
     auto fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragmentShader, 1, &fragmentSrc, nullptr);
     glCompileShader(fragmentShader);
+
+    //I spent like 3 hours trying to find shader errors. Here you go. Now this will print any error you get trying to compile a shader.
+    //Don't suffer like I did.
+    //I also updated it to tell you if the error happened in a vertex or fragment shader.
+
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &isCompiled);
+    if (!isCompiled)
+    {
+        GLint maxLength = 0;
+        glGetShaderiv(fragmentShader, GL_INFO_LOG_LENGTH, &maxLength);
+
+        // The maxLength includes the NULL character
+        std::vector<GLchar> errorLog(maxLength);
+        glGetShaderInfoLog(fragmentShader, maxLength, &maxLength, &errorLog[0]);
+
+        // Provide the infolog in whatever manor you deem best.
+        std::cout << "Fragment Shader" << errorLog.data() << std::endl;
+        std::cin.get();
+    }
 
     auto shaderProgram = glCreateProgram();
 
     glAttachShader(shaderProgram, vertexShader);
     glAttachShader(shaderProgram, fragmentShader);
 
-    glBindFragDataLocation(shaderProgram, 0, "color");
     glLinkProgram(shaderProgram);
-    glUseProgram(shaderProgram);
 
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);

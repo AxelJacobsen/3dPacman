@@ -11,9 +11,11 @@
  *  @param    y  - Initializaiton pos Y
  *  @see      Character::characterInit();
  */
-Pacman::Pacman(std::pair<int, int> XY) {
+Pacman::Pacman(std::pair<int, int> XY, std::pair<float, float> xyshift) {
     dir = 9, prevDir = 3;
+    XYshift = xyshift;
     XYpos[0] = XY.first, XYpos[1] = XY.second;
+    lerpProg = 1.0f - lerpStep;
     Character::characterInit();
     pacAnimate();
 };
@@ -36,9 +38,9 @@ void Pacman::changeDir() {
     if (legal && (dir % modDir == 0) && dir != prevDir) {   //Incase you are trying to turn 180 degrees this procs
         float coordHolder[2];
 
-        coordHolder[0] = lerpStop[0];      coordHolder[1] = lerpStop[1];
+        coordHolder[0] = lerpStop[0];   coordHolder[1] = lerpStop[1];
         lerpStop[0] = lerpStart[0];     lerpStop[1] = lerpStart[1];
-        lerpStart[0] = coordHolder[0];   lerpStart[1] = coordHolder[1];
+        lerpStart[0] = coordHolder[0];  lerpStart[1] = coordHolder[1];
 
         if (lerpProg < 0.0f) { lerpProg = 1.0f; }            //This stops skiping a tile if lerpProg is over 1 or under 0
         else if (1.0f < lerpProg) { lerpProg = lerpStep / 2.0f; }
@@ -52,7 +54,7 @@ void Pacman::changeDir() {
         lerpStart[1] = lerpStop[1];
         Character::getLerpCoords();
         lerpProg = lerpStep / 2.0f;
-        prevDir = dir;
+        prevDir  = dir;
     }
 };
 
@@ -66,10 +68,6 @@ void Pacman::changeDir() {
 void Pacman::updateLerp() {
     if (lerpProg > 1 || lerpProg < 0) { changeDir(); }
     else { lerpProg += lerpStep; }
-
-    if (0.5f <= lerpProg && lerpProg <= 0.6 && !AI) {
-        checkPellet();
-    }
 }
 
 /**
@@ -97,49 +95,6 @@ void Pacman::updateDir(int outDir) {
     dir = outDir;
 }
 
-/**
- *  Checks whether pacman is on a pellet
- *
- *  @see      Pellets:: checkCoords( int XY);
- *  @see      Pellets:: removePellet();
- */
-void Pacman::checkPellet() {
-    /*
-    int test = 0;
-    for (auto& it : Pellets) {
-        int check = 0;
-        for (int i = 0; i < 2; i++) {
-            if (XYpos[i] == it->checkCoords(i) && it->isEnabled()) { check++; }
-        }
-        if (check == 2) {
-            it->removePellet();
-            break;
-        }
-        test++;
-    }
-    */
-};
-
-/**
- *  Checks if pacman is crashing with ghost
- *
- *  @see      Character:: AIgetXY();
- *  @see      Character:: AIgetLerpPog();
- *  @return   returns wheter or not pacman and ghost are crashing
- */
-void Pacman::callGhostCollision() {
-    /*
-    for (auto& it : Ghosts) {
-        if (!(it->checkGhostCollision(vertices[0], vertices[1]))) { run = false; }
-    }
-    */
-}
-
-/**
- *  Handles pacman animation
- *
- *  @see  Character:: characterAnimate(float hMin, float wMin, float hMax, float wMax);
- */
 void Pacman::pacAnimate() {
     if (animFlip) { animVal++; }
     else { animVal--; }
@@ -226,21 +181,21 @@ GLuint Pacman::compilePacman() {
 }
 
 void Pacman::drawPacman() {
-    setVAO(compilePacman());
-    GLuint ptexAttrib = glGetAttribLocation(shaderProgram, "pTexcoord");
-    glEnableVertexAttribArray(ptexAttrib);
-    glVertexAttribPointer(ptexAttrib, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
+    //setVAO(compilePacman());
+    //GLuint ptexAttrib = glGetAttribLocation(shaderProgram, "pTexcoord");
+    //glEnableVertexAttribArray(ptexAttrib);
+    //glVertexAttribPointer(ptexAttrib, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
 
-    auto playerTextureLocation = glGetUniformLocation(shaderProgram, "u_PlayerTexture");
+    //auto playerTextureLocation = glGetUniformLocation(shaderProgram, "u_PlayerTexture");
 
-    glUseProgram(shaderProgram);
+    //glUseProgram(shaderProgram);
 
-    glBindVertexArray(characterVAO);
-    glUniform1i(playerTextureLocation, 0);
+    //glBindVertexArray(characterVAO);
+    //glUniform1i(playerTextureLocation, 0);
     transformPacman();
-    CamHolder->applycamera(shaderProgram, WidthHeight.first, WidthHeight.second);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (const void*)0);
-    CleanVAO(characterVAO);
+    //CamHolder->applycamera(shaderProgram, WidthHeight.second, WidthHeight.first);
+    //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (const void*)0);
+    //CleanVAO(characterVAO);
 }
 
 /**

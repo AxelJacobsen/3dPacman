@@ -59,14 +59,14 @@ void Character::convertToVert() {
  */
 bool Character::getLegalDir(int dir) {
     int testPos[2] = { XYpos[0], XYpos[1] };
+
     switch (dir) {
     case 2: testPos[1] += 1; break;      //UP test
     case 4: testPos[1] -= 1; break;      //DOWN test
     case 3: testPos[0] -= 1; break;      //LEFT test
     case 9: testPos[0] += 1; break;      //RIGHT test
     }
-
-    if ((testPos[0] < (WidthHeight.first) && testPos[1] < (WidthHeight.second)) && (0 <= testPos[0] && 0 <= testPos[1])) {
+    if ((testPos[0] < (WidthHeight.first-1) && testPos[1] < (WidthHeight.second-1)) && (0 <= testPos[0] && 0 <= testPos[1])) {
         if (CamHolder->getCamMapVal(testPos[0], testPos[1]) != 1) { return true; }
         else { return false; }
     }
@@ -139,10 +139,6 @@ void Character::changeDir() {
 void Character::updateLerp() {
     if (lerpProg > 1 || lerpProg < 0) { changeDir(); }
     else { lerpProg += lerpStep; }
-
-    if (0.5f <= lerpProg && lerpProg <= 0.6 && !AI) {
-        //checkPellet();
-    }
 }
 
 /**

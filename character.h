@@ -23,7 +23,7 @@ protected:
     //Shared Values
     float   lerpStart[2],               //Contains start coords of LERP
         lerpStop[2],                //Contains stop  coords of LERP
-        speedDiv = 20.0f,           //Higher number = slower speed
+        speedDiv = 15.0f,           //Higher number = slower speed
         lerpStep = 1.0f / speedDiv,   //Speed of LERP, also slowed by frequency in main
         lerpProg = lerpStep;        //defines progress as step to avoid hickups
 
@@ -65,7 +65,7 @@ public:
     void   setVAO(const GLuint vao);
     GLuint getShader();
     GLuint getVAO();
-    void  callCleanVAO() { CleanVAO(characterVAO); };
+    void  callCleanVAO() {if (characterVAO) CleanVAO(characterVAO); };
     int   getVertSize() { return sizeof(vertices) / sizeof(vertices[0]); }
     void  callCreateCharacterVao(GLfloat* object, int size, const int stride);
     void  setXYshift(std::pair<float, float> XYvalues) { XYshift = XYvalues; };

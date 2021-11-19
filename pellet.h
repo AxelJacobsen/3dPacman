@@ -36,7 +36,7 @@ public:
     };
     void initCoords();
     GLfloat getVertCoord(int index);
-    void removePellet();
+    bool removePellet();
     int  checkCoords(int XY);
     bool isEnabled();
     void callCompilePelletShader();
@@ -50,6 +50,7 @@ public:
     GLuint getShader();
     void  getPelletCameraPointer(Camera* newCamera) { pCamHolder = newCamera; };
     void  pelletSetWidthHeight(std::pair<int, int> widthHeidht) { WidthHeight = widthHeidht; };
+    std::pair<int, int> getPelletXY() { std::pair<int, int>pelXyRet = { XYpos[0],XYpos[1] }; return pelXyRet; }
 };
 
 #endif
