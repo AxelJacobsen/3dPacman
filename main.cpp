@@ -25,7 +25,6 @@
  *  main function
  */
 int main(){
-  
     //Container definition
     std::vector<Map*>		Maps;		///< Contains only map, permits adding more maps in the future
     std::vector<Pacman*>    Pacmans;    ///< Contains only pacman, done for ease of use
@@ -44,6 +43,7 @@ int main(){
     Maps[0]->getMapCameraPointer(cameraAdress);
     Maps[0]->compileMapShader();
     cameraAdress->recieveMap(Maps[0]->getIntMap());
+    printf("Map Loaded\n");
 
     //Init pacman
     Pacmans.push_back(new Pacman(Maps[0]->getPacSpawnPoint(), XYshift));
@@ -52,6 +52,7 @@ int main(){
     Pacmans[0]->setXYshift(XYshift);
     Pacmans[0]->getCameraPointer(cameraAdress);
     Pacmans[0]->setVAO(Pacmans[0]->compilePacman());
+    printf("Pacman Loaded\n");
 
     //Init pellets
     std::pair<int, int> WidthHeight = Maps[0]->getWidthHeight();
@@ -80,6 +81,7 @@ int main(){
         std::pair<int, int> tempXY = pIT->getPelletXY();
         pelletMap[tempXY.second][tempXY.first] = pIT;
     }
+    printf("Pellet Loaded\n");
 
     //spawn ghosts
     int ghostAmount = 5;
@@ -99,6 +101,17 @@ int main(){
         }
         Ghosts[0]->callLoadModel();
         Ghosts[0]->compileGhostModelShader();
+        int insurance = 0;
+        for (auto& initializeAllGhosts : Ghosts) {
+            if (insurance != 0) {
+                initializeAllGhosts->setShader(Ghosts[0]->getShader());
+                initializeAllGhosts->setVAO(Ghosts[0]->getVAO());
+                initializeAllGhosts->setModelSize(Ghosts[0]->getModelSize());
+                printf("Ghost Loaded: %i\n", insurance);
+            }
+            insurance++;
+        }
+
     }
 
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -109,8 +122,11 @@ int main(){
     float frequency = currentTime;
     float deltaTime = 0.0f;	// time between current frame and last frame
     float lastFrame = 0.0f;
-    float delay = 0.015f;
-    
+    float delay     = 0.015f;
+    bool fullscreen = false;
+
+    std::pair<int, int> wihi = cameraAdress->getScreenSize();
+
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
@@ -122,7 +138,6 @@ int main(){
         lastFrame = currentTime;
         
         if (Pacmans[0]->getRun()) {
-            Pellets[0]->drawPellets(Pellets.size());
             Pacmans[0]->drawPacman();
 
             //Pellet Collision
@@ -160,7 +175,7 @@ int main(){
             if (0 < ghostAmount) {
                 int mengde = 0;
                 for (auto& drawGhostIt : Ghosts) {
-                    drawGhostIt->drawGhostsAsModels(currentTime, Ghosts[0]->getShader(), WidthHeight, Ghosts[0]->getVAO(), Ghosts[0]->getModelSize());
+                    drawGhostIt->drawGhostsAsModels(currentTime, WidthHeight);
                 }
             }
             Maps[0]->drawMap();
@@ -168,6 +183,7 @@ int main(){
         
         //LERP Update
         if (currentTime > (frequency + delay) && Pacmans[0]->getRun()) {
+            Pellets[0]->drawPellets(Pellets.size());
             frequency = currentTime;
             bool animate = false;
 
@@ -195,6 +211,18 @@ int main(){
         
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
             break;
+        }
+
+        if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
+            if (!fullscreen) {
+                fullscreen = true;
+                glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(), NULL, NULL, wihi.first, wihi.second, 30);
+            }
+            else {
+                
+                fullscreen = false;
+                glfwSetWindowMonitor(window, NULL, NULL, NULL, wihi.first, wihi.second, 30);
+            }
         }
     }
 

@@ -2,9 +2,12 @@
 #include "camera.h"
 #include <stb_image.h>
 
-// ---------------------------------------------------------------------------- -
+// -----------------------------------------------------------------------------
 // COMPILE SHADER
 // -----------------------------------------------------------------------------
+/*
+*   shader Compiler
+*/
 GLuint CompileShader(const std::string& vertexShaderSrc,
     const std::string& fragmentShaderSrc)
 {
@@ -34,9 +37,6 @@ GLuint CompileShader(const std::string& vertexShaderSrc,
     glShaderSource(fragmentShader, 1, &fragmentSrc, nullptr);
     glCompileShader(fragmentShader);
 
-    //I spent like 3 hours trying to find shader errors. Here you go. Now this will print any error you get trying to compile a shader.
-    //Don't suffer like I did.
-    //I also updated it to tell you if the error happened in a vertex or fragment shader.
 
     glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &isCompiled);
     if (!isCompiled)
@@ -66,6 +66,101 @@ GLuint CompileShader(const std::string& vertexShaderSrc,
     return shaderProgram;
 }
 
+// -----------------------------------------------------------------------------
+// COMPILE SHADER
+// -----------------------------------------------------------------------------
+/*
+*   Overloaded shader Compiler takes geometry shader as well
+*/
+GLuint CompileShader(const std::string& vertexShaderSrc,
+                     const std::string& fragmentShaderSrc,
+                     const std::string& geometryShaderSrc)
+{
+
+    auto vertexSrc = vertexShaderSrc.c_str();
+    auto fragmentSrc = fragmentShaderSrc.c_str();
+    auto geometrySrc = geometryShaderSrc.c_str();
+
+    auto vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertexShader, 1, &vertexSrc, nullptr);
+    glCompileShader(vertexShader);
+    GLint isCompiled = 0;
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &isCompiled);
+    if (!isCompiled)
+    {
+        GLint maxLength = 0;
+        glGetShaderiv(vertexShader, GL_INFO_LOG_LENGTH, &maxLength);
+
+        // The maxLength includes the NULL character
+        std::vector<GLchar> errorLog(maxLength);
+        glGetShaderInfoLog(vertexShader, maxLength, &maxLength, &errorLog[0]);
+
+        // Provide the infolog in whatever manor you deem best.
+        std::cout << "Vertex Shader" << errorLog.data() << std::endl;
+        std::cin.get();
+        std::cin.get();
+    }
+
+    auto geometryShader = glCreateShader(GL_GEOMETRY_SHADER);
+    glShaderSource(geometryShader, 1, &geometrySrc, nullptr);
+    glCompileShader(geometryShader);
+    glGetShaderiv(geometryShader, GL_COMPILE_STATUS, &isCompiled);
+    if (!isCompiled)
+    {
+        GLint maxLength = 0;
+        glGetShaderiv(geometryShader, GL_INFO_LOG_LENGTH, &maxLength);
+
+        // The maxLength includes the NULL character
+        std::vector<GLchar> errorLog(maxLength);
+        glGetShaderInfoLog(geometryShader, maxLength, &maxLength, &errorLog[0]);
+
+        // Provide the infolog in whatever manor you deem best.
+        std::cout << "Geometry Shader" << errorLog.data() << std::endl;
+        std::cin.get();
+    }
+
+    auto fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader, 1, &fragmentSrc, nullptr);
+    glCompileShader(fragmentShader);
+
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &isCompiled);
+    if (!isCompiled)
+    {
+        GLint maxLength = 0;
+        glGetShaderiv(fragmentShader, GL_INFO_LOG_LENGTH, &maxLength);
+
+        // The maxLength includes the NULL character
+        std::vector<GLchar> errorLog(maxLength);
+        glGetShaderInfoLog(fragmentShader, maxLength, &maxLength, &errorLog[0]);
+
+        // Provide the infolog in whatever manor you deem best.
+        std::cout << "Fragment Shader" << errorLog.data() << std::endl;
+        std::cin.get();
+    }
+
+    auto shaderProgram = glCreateProgram();
+
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, geometryShader);
+    glAttachShader(shaderProgram, fragmentShader);
+
+    glLinkProgram(shaderProgram);
+
+    glDeleteShader(vertexShader);
+    glDeleteShader(geometryShader);
+    glDeleteShader(fragmentShader);
+
+    return shaderProgram;
+}
+
+/*
+*   Loads texture
+* 
+*   @param filepath - filepath of texture
+*   @param slot - what slot to load the texture into
+* 
+*   @return returns texture GLuint
+*/
 GLuint load_opengl_texture(const std::string& filepath, GLuint slot)
 {
     /** Image width, height, bit depth */
@@ -141,6 +236,36 @@ GLuint CreateObject(GLfloat* object, int size, const int stride)
 
     return vao;
 };
+
+/**
+ *  Creates object
+ *
+ *  @param object    - pointer to object to be created
+ *  @param size      - size of object
+ *  @param stride    - stride used in object
+ *  @param noEbo     - signals to not create an EBO, not actually used due to overload
+ *
+ *  @return     returns vao
+ */
+GLuint CreateObject(GLfloat* object, int size, const int stride, bool noEbo)
+{
+    GLuint vao;
+    glCreateVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+
+    GLuint vbo;
+    glGenBuffers(1, &vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER,
+        size,
+        (&object[0]),
+        GL_STATIC_DRAW);
+
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, (sizeof(GLfloat) * stride), (const void*)0);
+
+    return vao;
+};
 // -----------------------------------------------------------------------------
 // GLOBAL FUNCTIONS
 // -----------------------------------------------------------------------------
@@ -156,29 +281,6 @@ GLuint getIndices(int out, int mid, int in) {
     if (in == out) { return out; }
     else { return (mid + in); };
 }
-
-/**
- *  Compiles all verticie lists into a large vector and calls CreateObject
- *
- *  @param itObj - which type of object to iterate, here either Pacman or ghost
- *
- *  @see Character::getVertCoord(int index);
- *  @see GLuint CreateObject(GLfloat* object, int size, const int stride);
- *
- *  @return returns VAO gotten from CreateObject func
- */
-/*
-GLuint compileVertices(std::vector<Ghost*> itObj) {
-    std::vector<GLfloat> veticieList;
-    int stride = 5;
-    for (auto& it : itObj) {
-        for (int i = 0; i < 20; i++) {
-            veticieList.push_back(it->getVertCoord(i));
-        }
-    }
-    return CreateObject(&veticieList[0], veticieList.size() * sizeof(veticieList[0]), stride);
-}
-*/
 
 // -----------------------------------------------------------------------------
 // Clean VAO

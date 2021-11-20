@@ -1,7 +1,7 @@
 /**
  *   @file     include.h
  * 
- *	Includes all libraries for other files
+ *	Includes all libraries for other files, as well as shaderss
  * 
  *   @author   Axel Jacobsen
  */

@@ -46,10 +46,8 @@ public:
 
     virtual void changeDir();
     virtual void updateLerp();
-    void compileGhostShader();
     void compileGhostModelShader();
-    void compileGhostShadowShader();
-    
+
     bool  checkGhostCollision(float pacX, float pacY, std::pair<float, float> xyshift);
     int   ghostGetRandomDir();
     void  ghostUpdateVertice();
@@ -57,17 +55,14 @@ public:
     int   ghostGetXY(int xy);
     void  ghostAnimate();
     int   getModelSize() { return modelSize; }
-    void  drawGhosts(const int ghostCount);
-    void  drawGhostsAsModels(float currentTime, const GLuint shadProg, std::pair<int, int> WH, const GLuint vao, const int size);
+    void  setModelSize(int mSize) { modelSize = mSize; }
+    void  drawGhostsAsModels(float currentTime, std::pair<int, int> WH);
     void  transformGhost(GLuint shaderProg, float currentTime);
-    void  deleteGhostSpriteSheet();
     void  callLoadModel() {
         std::pair<GLuint, int> VAOsize = LoadModel("assets/model/ghost", "/ghostModel.obj");
         characterVAO = VAOsize.first; modelSize = VAOsize.second;
-        //floorVAO = CreateSquare();
     };
     std::pair<GLuint, int> LoadModel(const std::string path, const std::string objID);
-    void ShadowMapping(GLuint vertexarray, GLuint modelShaderprogram, GLuint depthmapfb, int size, GLuint SHADOW_WIDTH, GLuint SHADOW_HEIGHT);
     void Light(
         const GLuint shaderprogram,
         const glm::vec3 pos = { 0.f, 0.f, 1.f },
@@ -77,15 +72,6 @@ public:
         const glm::vec3 up_vec = { 0.f,1.f,0.f },
         const float specularity = 0.2f
     );
-    void Transform(
-        const GLuint shaderprogram,
-        const glm::vec3& translation = { 0.f,0.f,0.f },
-        const float& radians = 0.f,
-        const glm::vec3& rotation_axis = { 0.f,1.f,0.f },
-        const glm::vec3& scale = { 0.5f,0.5f,0.5f }
-    );
-    std::tuple<GLuint, GLuint> createShadowmap(const GLuint SHADOW_WIDTH, const GLuint SHADOW_HEIGHT);
-    GLuint CreateSquare();
 };
 
 #endif

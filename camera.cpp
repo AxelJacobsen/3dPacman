@@ -1,17 +1,16 @@
 #include "camera.h"
 
 // -----------------------------------------------------------------------------
-// Class function definition
+// Camera Class function definition
 // -----------------------------------------------------------------------------
 
 /**
- *  Handles Ghost spawning
+ *  Handles checking what cardinal Direction the camera is facing relative to the map
  *
- *  @param y    - y coordinate for coords
- *  @param x    - x coordinate for coords
- *  @param loop - current repitition / desired vertice
+ *  @param xRot - xRot x of front of camera
+ *  @param yRot - yRot y of front of camera
  *
- *  @return returns float for correct coord
+ *  @return a number representing what direction the camera is facing
  */
 int Camera::checkCardinal(const float xRot, const float yRot) {
     if ((xRot < 0.5 && -0.5f < xRot) && (0.5f < yRot)) { return 0; } //North
@@ -24,9 +23,11 @@ int Camera::checkCardinal(const float xRot, const float yRot) {
 /**
  *  returns coordinates based on give x y and "loop"
  *
- *  @param y    - y coordinate for coords
- *  @param x    - x coordinate for coords
- *  @param loop - current repitition / desired vertice
+ *  @param y     - y coordinate for coords
+ *  @param x     - x coordinate for coords
+ *  @param loop  - current repitition / desired vertice
+ *  @param layer - height of coords
+ *  @param shift - width and height of a square, sent in a pair
  *
  *  @return returns float for correct coord
  */
@@ -54,7 +55,12 @@ GLfloat Camera::getCoordsWithInt(int y, int x, int loop, float layer, std::pair<
 };
 
 /**
- *  Applies camera tranformation
+ *  Applies camera transformation to supplied shader
+ *
+ *  @param shader - shader to apply transformation to
+ *  @param width  - width of screeen
+ *  @param height - height of screen
+ *
  */
 void Camera::applycamera(const GLuint shader, const float width, const float height) {
     const int spriteSize = 64;
@@ -70,9 +76,13 @@ void Camera::applycamera(const GLuint shader, const float width, const float hei
     glUniformMatrix4fv(viewMat, 1, false, glm::value_ptr(view));
 }
 
-/*
-*
-*/
+/**
+ *  Updates camera values and front vector
+ *
+ *  @param xpos - updated xPos of mouse
+ *  @param ypos - updated yPos of mouse
+ *
+ */
 void Camera::mouseMoveCamera(const double xpos, const double ypos) {
     if (firstMouse)
     {

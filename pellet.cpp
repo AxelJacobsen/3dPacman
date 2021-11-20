@@ -25,31 +25,17 @@ Pellet::Pellet(int x, int y, std::pair<float, float> shift) {
  */
 void Pellet::initCoords() {
     int loop = 0;
-    float Xquart = XYshift.first  / 3.0f;
-    float Yquart = XYshift.second / 3.0f;
-    //float height = XYshift.second*2.0f / 3.0f;
-    //for (int side = 0; side < 6; side++){
-        for (int y = 0; y < 4; y++) {
-            for (int x = 0; x < 3; x++) {
-                vertices[loop] = (pCamHolder->getCoordsWithInt(XYpos[1], XYpos[0], loop, 0.0f, XYshift));
-                switch (loop) {
-                case 0:  vertices[loop] += Xquart; break;   //BL
-                case 1:  vertices[loop] += Yquart; break;
-
-                case 3:  vertices[loop] += Xquart; break;   //TL
-                case 4:  vertices[loop] -= Yquart; break;
-
-                case 6:  vertices[loop] -= Xquart; break;   //TR
-                case 7:  vertices[loop] -= Yquart; break;
-
-                case 9:  vertices[loop] -= Xquart; break;   //BR
-                case 10: vertices[loop] += Yquart; break;
-                default: vertices[loop] = 0.0f;           break;
-                }
-                loop++;
-            }
+    float Xquart = XYshift.first  / 2.0f;
+    float Yquart = XYshift.second / 2.0f;
+    for (int x = 0; x < 3; x++) {
+        vertices[loop] = (pCamHolder->getCoordsWithInt(XYpos[1], XYpos[0], loop, 0.0f, XYshift));
+        switch (loop) {
+        case 0:  vertices[loop] += Xquart; break;
+        case 1:  vertices[loop] += Yquart; break;
+        default: vertices[loop] =  Yquart; break;
         }
-   // }
+        loop++;
+    }
 }
 
 /**
@@ -98,52 +84,84 @@ bool Pellet::isEnabled() {
     return enabled;
 }
 
+/**
+ *  CAlls compileshader with pellets shaders and sets vertecie values
+ *
+ *  @see CompileShader(const std::string& vertexShaderSrc,
+                     const std::string& fragmentShaderSrc,
+                     const std::string& geometryShaderSrc)
+ */
 void Pellet::callCompilePelletShader() {
-    pelletShaderProgram = CompileShader(    pelletVertexShaderSrc,
-                                            pelletFragmentShaderSrc);
-    
+    pelletShaderProgram = CompileShader(pelletVertexShaderSrc,
+            pelletFragmentShaderSrc, pelletGeometryShaderSrc);
+
     GLint pelposAttrib = glGetAttribLocation(pelletShaderProgram, "pelPosition");
     glEnableVertexAttribArray(pelposAttrib);
-    glVertexAttribPointer(pelposAttrib, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
-    
+    glVertexAttribPointer(pelposAttrib, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0); 
 }
 
 /**
  *  Draws Pellets
  *
+ *  @see Camera::applycamera(const GLuint shader, const float width, const float height)
+ * 
  *  @param shader - shaderprogram to use for drawing
  *  @param vao    - vao of object
- */
+ */ 
 void Pellet::drawPellets(const int size) {
     auto pelletVertexColorLocation = glGetUniformLocation(pelletShaderProgram, "u_Color");
     glUseProgram(pelletShaderProgram);
     pCamHolder->applycamera(pelletShaderProgram, WidthHeight.second, WidthHeight.first );
     glBindVertexArray(pelletVAO);
     glUniform4f(pelletVertexColorLocation, 0.8f, 0.8f, 0.0f, 1.0f);
-    glDrawElements(GL_TRIANGLES, int(6 * size), GL_UNSIGNED_INT, (const void*)0);
+    glDrawArrays(GL_POINTS, 0, int(6 * size));
 }
 
+/**
+ *  Cleans all pellet values
+ *
+ *  @see CleanVAO(GLuint& vao)
+ */
 void Pellet::cleanPellets() {
     glDeleteProgram(pelletShaderProgram);
     CleanVAO(pelletVAO);
 }
 
+/**
+ *  Cleans pellet VAO
+ *
+ *  @see CleanVAO(GLuint& vao)
+ */
 void Pellet::cleanPelletVAO() { 
     CleanVAO(pelletVAO); 
 };
 
+/**
+ *   Calls createObject for pellet
+ *
+ *  @see CreateObject(GLfloat* object, int size, const int stride, bool noEbo)
+ */
 void Pellet::callCreatePelletVAO(GLfloat* object, int size, const int stride) {
-    pelletVAO = CreateObject(object, size, stride);
+    pelletVAO = CreateObject(object, size, stride, true);
 };
 
+/**
+ *  Sets pelletVAO
+ */
 void Pellet::setVAO(const GLuint vao) {
     pelletVAO = vao;
 }
 
+/**
+ *  returns pelletVAO
+ */
 GLuint Pellet::getVAO() {
     return pelletVAO;
 }
 
+/**
+ *  returns pelletShader
+ */
 GLuint Pellet::getShader() {
     return pelletShaderProgram;
 }

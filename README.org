@@ -1,5 +1,9 @@
 #+TITLE: Assignment 2: 3D Pacman
 
+* Controls:
+- mouse to look around
+- WASD follows the direction you are looking so W will always be forward
+
 * Introduction
 
 In this assignment each group is going to program a 3D version of the Pacman

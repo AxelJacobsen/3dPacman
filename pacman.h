@@ -15,10 +15,10 @@
  // -----------------------------------------------------------------------------
 class Pacman : public Character {
 private:
-    int cardDir = 0,                //Cardinal direction character is heading
-        collected = 0,
-        animDelay = 10,
-        animVal = 0;                //A number between 0 - 3 used to define
+    int cardDir     = 0,                //Cardinal direction character is heading
+        collected   = 0,
+        animDelay   = 10,
+        animVal     = 0;                //A number between 0 - 3 used to define
     GLuint pacSpriteSheet;
     bool updatePellet = false,
          run = true;
@@ -39,17 +39,17 @@ public:
     void deletePacSpriteSheet();
     bool updatePelletState(bool change);
     void pickupPellet() { collected++; };
-    int  getPellets() { return collected; };
+    int  getPellets()   { return collected; };
     void updateAnimDel(int val, bool set);
-    int  getAnimDel() { return animDelay; };
-    bool getRun() { return run; };
+    int  getAnimDel()   { return animDelay; };
+    bool getRun()       { return run; };
+    float getLerpProg() { return lerpProg; }
     void setRun(const bool runUpdate) { run = runUpdate; };
     GLuint compilePacman();
     void drawPacman();
     void transformPacman();
     void moveCamera(float x, float y);
     void checkForKeyUpdate();
-    float getLerpProg() { return lerpProg; }
 };
 
 #endif

@@ -10,8 +10,12 @@
  *  @param    x  - Initialization pos X
  *  @param    y  - Initializaiton pos Y
  *  @param    ai - upsates AI to define as Ghost
- *  @see      Character:: getRandomAIdir();
- *  @see      Character:: characterInit();
+ *  @param    widthheight   - width and height of map
+ *  @param    xyshift       - size of one square
+ *  @param    campoint      - pointer to camrea object
+ *  @see      Character::characterInit();
+ *  @see      Ghost::ghostGetRandomDir();
+ *  @see      Ghost::characterInit();
  */
 Ghost::Ghost(int x, int y, bool ai, std::pair<int, int> widthheight, std::pair<float, float> xyshift, Camera* campoint) {
     CamHolder = campoint;
@@ -29,8 +33,8 @@ Ghost::Ghost(int x, int y, bool ai, std::pair<int, int> widthheight, std::pair<f
 /**
  *  Handles direction change requests
  *
- *  @see      Character:: getRandomAIdir();
- *  @see      Character:: getLegalDir(int dir);
+ *  @see      Ghost:: ghostGetRandomDir();
+ *  @see      Ghost:: getLegalDir(int dir);
  *  @see      Character:: getLerpCoords();
  */
 void Ghost::changeDir() {
@@ -51,11 +55,10 @@ void Ghost::changeDir() {
 };
 
 /**
- *  Handles LERP updates
+ *  Handles ghost LERP updates
  *
  *  @see      Character:: changeDir();
- *  @see      Character:: checkPellet();
- *  @see      Character:: AIupdateVertice();
+ *  @see      Character:: ghostUpdateVertice();
  */
 void Ghost::updateLerp() {
     if (lerpProg >= 1.0f || lerpProg <= 0.0f) { changeDir(); }
@@ -64,37 +67,10 @@ void Ghost::updateLerp() {
 }
 
 /**
- *  Handles LERP updates
+ *  compiles modelShader for ghost
  *
- *  @see      Character:: changeDir();
- *  @see      Character:: checkPellet();
- *  @see      Character:: AIupdateVertice();
- */
-void Ghost::compileGhostShader() {
-    shaderProgram = CompileShader(  ghostVertexShaderSrc,
-                                    ghostFragmentShaderSrc);
-    textureSheet = load_opengl_texture("assets/pacman.png", 1);
-}
-
-/**
- *  Handles LERP updates
- *
- *  @see      Character:: changeDir();
- *  @see      Character:: checkPellet();
- *  @see      Character:: AIupdateVertice();
- */
-void Ghost::compileGhostShadowShader() {
-    std::tie(shadowmapFrameBuffer, depthMap) = createShadowmap(SHADOW_WIDTH, SHADOW_HEIGHT);
-    //modelShadowShader = CompileShader(  VertexShaderSrc,
-    //                                    shadowFragmentShaderSrc);
-}
-
-/**
- *  Handles LERP updates
- *
- *  @see      Character:: changeDir();
- *  @see      Character:: checkPellet();
- *  @see      Character:: AIupdateVertice();
+ *  @see CompileShader( const std::string& vertexShaderSrc,
+                        const std::string& fragmentShaderSrc)
  */
 void Ghost::compileGhostModelShader() {
     shaderProgram = CompileShader(  VertexShaderSrc,
@@ -102,20 +78,9 @@ void Ghost::compileGhostModelShader() {
 }
 
 /**
- *  Returns map value
- *
- *  @return returns if coord is wall or not
- */
-void Ghost::deleteGhostSpriteSheet() {
-    glDeleteTextures(1, &textureSheet);
-}
-
-
-/**
  *  Checks if pacman is crashing with ghost
  *
- *  @see      Character:: AIgetXY();
- *  @see      Character:: AIgetLerpPog();
+ *  @see      Camera:: getCoordsWithInt();
  *  @return   returns wheter or not pacman and ghost are crashing
  */
 bool Ghost::checkGhostCollision(float pacX, float pacY, std::pair<float,float> xyshift) {
@@ -232,51 +197,49 @@ void Ghost::ghostAnimate() {
 /**
  *  Draws Ghost
  *
- *  @param shader - shaderprogram to use for drawing
+ *  @param currentTime - shaderprogram to use for drawing
+ *  @param shadProg - shaderprogram to use for drawing
+ *  @param WH - Width and height of map
+ *  @param vao - vao used to draw object
+ *  @param size - size of model
  *
- *  @see compileVertices(std::vector<Character*> itObj)
+ *  @see Camera::applycamera(const GLuint shader, const float width, const float height)
  *  @see CleanVAO(GLuint& vao)
+ *  @see Ghost::transformGhost(GLuint shaderProg, float currentTime)
+ *  @see Ghost::Light(
+    const GLuint modelShaderprogram,
+    const glm::vec3 pos,
+    const glm::vec3 color,
+    const glm::mat4 light_Projection,
+    const glm::vec3 look_at,
+    const glm::vec3 up_vec,
+    const float spec
+)
  */
-void Ghost::drawGhosts(const int ghostCount) {
-    GLuint gtexAttrib = glGetAttribLocation(shaderProgram, "gTexcoord");
-    glEnableVertexAttribArray(gtexAttrib);
-    glVertexAttribPointer(gtexAttrib, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
+void Ghost::drawGhostsAsModels(float currentTime, std::pair<int,int> WH) {
 
-    auto ghostTextureLocation = glGetUniformLocation(shaderProgram, "g_GhostTexture");
     glUseProgram(shaderProgram);
+
+    auto vertexColorLocation = glGetUniformLocation(shaderProgram, "u_Color");
+    glUniform4f(vertexColorLocation, 0.8f, 0.2f, 0.2f, 1.0f);
+
+    CamHolder->applycamera(shaderProgram, WH.second, WH.first);
+    transformGhost(shaderProgram, currentTime);
+    Light(shaderProgram);
+
     glBindVertexArray(characterVAO);
-    glUniform1i(ghostTextureLocation, 1);
-
-    CamHolder->applycamera(shaderProgram, WidthHeight.second, WidthHeight.first);
-
-    for (int g = 0; g < (ghostCount * 24); g += 24) {
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (const void*)g);
-    }
+    glDrawArrays(GL_TRIANGLES, 6, modelSize);
 }
 
 /**
- *  Draws Ghost
+ *  Loads 3d model
  *
- *  @param shader - shaderprogram to use for drawing
- *
- *  @see compileVertices(std::vector<Character*> itObj)
- *  @see CleanVAO(GLuint& vao)
+ *  @see  LoadObj(attrib_t *attrib, std::vector<shape_t> *shapes,
+             std::vector<material_t> *materials, std::string *warn,
+             std::string *err, const char *filename, const char *mtl_basedir,
+             bool triangulate, bool default_vcols_fallback)
+ *  @return returns VAO and size of model in a pair
  */
-void Ghost::drawGhostsAsModels(float currentTime, const GLuint shadProg, std::pair<int,int> WH, const GLuint vao, const int size) {
-
-    glUseProgram(shadProg);
-
-    auto vertexColorLocation = glGetUniformLocation(shadProg, "u_Color");
-    glUniform4f(vertexColorLocation, 0.8f, 0.2f, 0.2f, 1.0f);
-
-    CamHolder->applycamera(shadProg, WH.second, WH.first);
-    transformGhost(shadProg, currentTime);
-    Light(shadProg);
-
-    glBindVertexArray(vao);
-    glDrawArrays(GL_TRIANGLES, 6, size);
-}
-
 std::pair<GLuint, int> Ghost::LoadModel(const std::string path, const std::string objID) {
     //We create a vector of Vertex structs. OpenGL can understand these, and so will accept them as input.
     std::vector<Vertex> vertices;
@@ -345,6 +308,9 @@ std::pair<GLuint, int> Ghost::LoadModel(const std::string path, const std::strin
     return VaoSize;
 }
 
+/**
+ *  Transforms ghost
+ */
 void Ghost::transformGhost(GLuint shaderProg, float currentTime){
     //LERP performed in the shader for the pacman object
     float height = sin(currentTime) / 100.0f;
@@ -373,43 +339,6 @@ void Ghost::transformGhost(GLuint shaderProg, float currentTime){
     if (transformationmat != -1)
 
     glUniformMatrix4fv(transformationmat, 1, false, glm::value_ptr(transformation));
-}
-
-// -----------------------------------------------------------------------------
-// Draw the shadowmap
-// -----------------------------------------------------------------------------
-void Ghost::ShadowMapping(GLuint vertexarray, GLuint modelShaderprogram, GLuint depthmapfb, int size, GLuint SHADOW_WIDTH, GLuint SHADOW_HEIGHT)
-{
-    //Set up the scene for the shadowmap
-    glViewport(-1, -1, SHADOW_WIDTH, SHADOW_HEIGHT);
-    glBindFramebuffer(GL_FRAMEBUFFER, depthmapfb);
-    glClear(GL_DEPTH_BUFFER_BIT);
-    glUseProgram(modelShaderprogram);
-
-    //Add Camera
-    //CamHolder->applycamera(shaderProgram, WidthHeight.second, WidthHeight.first);
-
-    //Compute the transformation for the scene for the current frame as normal
-    Transform(modelShaderprogram);
-
-    //Compute the Light
-    Light(modelShaderprogram);
-
-    //Draw a square underneath the Cup for shadowing purposes
-    GLuint squareVao = CreateSquare();
-    glBindVertexArray(squareVao);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (const void*)0);
-
-    //Draw the cup
-    glBindVertexArray(vertexarray);
-    glDrawArrays(GL_TRIANGLES, 6, size);
-
-    //Reset all changed values back to normal once we are done here
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glViewport(-1.0f, -1.0f, SHADOW_WIDTH, SHADOW_HEIGHT);
-
-    //Make sure to clean up after yourself, lest you face memoryleaks
-    CleanVAO(squareVao);
 }
 
 // -----------------------------------------------------------------------------
@@ -451,125 +380,4 @@ void Ghost::Light(
     //Values for Shadow computation
     if (lightSpace != -1)
         glUniformMatrix4fv(lightSpace, 1, false, glm::value_ptr(lightspacematrix));
-}
-
-// -----------------------------------------------------------------------------
-// Set up the shadowmap
-// -----------------------------------------------------------------------------
-std::tuple<GLuint, GLuint> Ghost::createShadowmap(const GLuint SHADOW_WIDTH, const GLuint SHADOW_HEIGHT)
-{
-    //Create a new framebuffer
-    GLuint FrameBuffer;
-    glGenFramebuffers(1, &FrameBuffer);
-
-    //Make a texture containing depth data
-    GLuint depthmap;
-    glGenTextures(1, &depthmap);
-    glBindTexture(GL_TEXTURE_2D, depthmap);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-
-
-    //This helps remove issues with areas that are not supposed to be shadowed being rendered as dark if outside of the maps area(SHADOW_WIDHT,SHADOW_HEIGHT).
-    float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-
-    //Bind the depthmap to the framebuffer
-    glBindFramebuffer(GL_FRAMEBUFFER, FrameBuffer);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthmap, 0);
-
-    //We aren't going to use color drawing in the framebuffer, so we can deactivate these
-    glDrawBuffer(GL_NONE);
-    glReadBuffer(GL_NONE);
-
-    //Make sure to return to the regular Framebuffer once you are done here to make sure you don't accidentally draw to the wrong buffer.
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    //Utilizing the power of C++ 11+, we can send more than one return value, so long as we specify that the function returns a std::tuple,
-    //as well as what the value types contained are.
-    return { FrameBuffer,depthmap };
-}
-
-// -----------------------------------------------------------------------------
-//  Create a quad.
-// -----------------------------------------------------------------------------
-//This has been updated in order to help draw a plane beneath the cup so we can have something to cast shadows onto
-GLuint Ghost::CreateSquare()
-{
-
-    GLfloat square[4 * 8] =
-    {
-        //x     y     z          normals
-        -1.0f, -1.0f, -0.1f,   0.0f,1.0f,0.0f,
-        -1.0f,  1.0f, -0.1f,   0.0f,1.0f,0.0f,
-         1.0f,  1.0f, -0.1f,   0.0f,1.0f,0.0f,
-         1.0f, -1.0f, -0.1f,   0.0f,1.0f,0.0f,
-    };
-
-    GLuint square_indices[6] = { 0,1,2,0,2,3 };
-
-    GLuint vao;
-    glCreateVertexArrays(1, &vao);
-    glBindVertexArray(vao);
-
-    GLuint vbo;
-    glGenBuffers(1, &vbo);
-
-    GLuint ebo;
-    glGenBuffers(1, &ebo);
-
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(square), square, GL_STATIC_DRAW);
-
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 8, (const void*)0);
-
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 8, (void*)(sizeof(float) * 3));
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(square_indices), square_indices, GL_STATIC_DRAW);
-
-    return vao;
-}
-
-// -----------------------------------------------------------------------------
-// Code handling Transformations
-// -----------------------------------------------------------------------------
-void Ghost::Transform(
-    const GLuint shaderprogram,
-    const glm::vec3& translation,
-    const float& radians,
-    const glm::vec3& rotation_axis,
-    const glm::vec3& scale
-)
-{
-
-    //Presentation below purely for ease of viewing individual components of calculation, and not at all necessary.
-
-    //LERP performed in the shader for the pacman object
-    glm::mat4 transMat = glm::translate(glm::mat4(1), glm::vec3(vertices[0] + (XYshift.first / 2.0f), vertices[1] + (XYshift.second / 2.0f), 0.0f));
-
-    //Rotate the object            base matrix      degrees to rotate   axis to rotate around
-    glm::mat4 rotate = glm::rotate(glm::mat4(1), glm::radians(1.5708f), glm::vec3(1.0f, 0.0f, 0.0f));
-
-    //Scale the object             base matrix      vector containing how much to scale along each axis (here the same for all axis)
-    glm::mat4 scaling = glm::scale(glm::mat4(1), glm::vec3(0.5f, 0.5f, 0.5f));
-
-    //Create transformation matrix      These must be multiplied in this order, or the results will be incorrect
-    glm::mat4 transformation = transMat * rotate * scaling;
-
-
-    //Get uniform to place transformation matrix in
-    //Must be called after calling glUseProgram     shader program in use   Name of Uniform
-    GLuint transformationmat = glGetUniformLocation(shaderprogram, "u_TransformationMat");
-
-    //Send data from matrices to uniform
-    //We also add a check to make sure that we found the location of the matrix before trying to write to it
-    if (transformationmat != -1)
-        //                     Location of uniform  How many matrices we are sending    value_ptr to our transformation matrix
-        glUniformMatrix4fv(transformationmat, 1, false, glm::value_ptr(transformation));
 }

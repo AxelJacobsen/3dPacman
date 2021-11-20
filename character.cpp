@@ -7,9 +7,7 @@
 /**
  *  Initializes LERP coords
  *
- *  @see      Character:: convertToVert();
- *  @see      Character:: pacAnimate();
- *  @see      Character:: AIanimate();
+ *  @see Character:: convertToVert();
  */
 void Character::characterInit() {
     convertToVert();
@@ -38,7 +36,7 @@ void Character::characterInit() {
 /**
  *  Initializes verticies list
  *
- *  @see      GLfloat getCoordsWithInt(int y,   int x,   int type);
+ *  @see GLfloat getCoordsWithInt(int y, int x, int type);
  */
 void Character::convertToVert() {
     int loop = 0, callCount = 0;
@@ -55,6 +53,9 @@ void Character::convertToVert() {
  *  Checks if requested drection is legal/wall or not
  *
  *  @param    dir  - pacmans requested direction
+ * 
+ *  @see      Camera::getCamMapVal(int x, int y)
+ * 
  *  @return   bool whether is is a legal direction or not
  */
 bool Character::getLegalDir(int dir) {
@@ -66,7 +67,7 @@ bool Character::getLegalDir(int dir) {
     case 3: testPos[0] -= 1; break;      //LEFT test
     case 9: testPos[0] += 1; break;      //RIGHT test
     }
-    if ((testPos[0] < (WidthHeight.first-1) && testPos[1] < (WidthHeight.second-1)) && (0 <= testPos[0] && 0 <= testPos[1])) {
+    if ((testPos[0] < (WidthHeight.first) && testPos[1] < (WidthHeight.second-1)) && (0 <= testPos[0] && 0 <= testPos[1])) {
         if (CamHolder->getCamMapVal(testPos[0], testPos[1]) != 1) { return true; }
         else { return false; }
     }
@@ -174,27 +175,53 @@ void Character::characterAnimate(float hMin, float wMin, float hMax, float wMax)
     vertices[18] = wMax;   vertices[19] = hMax; // Bot Right
 }
 
+/**
+ *  cleans Character values shaderprogram and VAO
+ *
+ *  @see CleanVAO(GLuint& vao)
+ */
 void Character::cleanCharacter() {
     glDeleteProgram(shaderProgram);
     if (characterVAO) CleanVAO(characterVAO);
 };
 
+/**
+ *  Sets shader to be recieved version
+ */
 void Character::setShader(const GLuint shaderProg) {
     shaderProgram = shaderProg;
 }
 
+/**
+ *  Updates character VAO
+ */
 void Character::setVAO(const GLuint vao) {
     characterVAO = vao;
 }
 
+/**
+ *  Retruns shaderprogram
+ *
+ *  @return returns shaderprogram
+ */
 GLuint Character::getShader() {
     return shaderProgram;
 }
 
+/**
+ *  retruns characterVAO
+ *
+ *  @return Returns character VAO
+ */
 GLuint Character::getVAO(){
     return characterVAO;
 }
 
+/**
+ *  cleans Character values shaderprogram and VAO
+ *
+ *  @see CreateObject(GLfloat* object, int size, const int stride);
+ */
 void  Character::callCreateCharacterVao(GLfloat* object, int size, const int stride) {
     characterVAO = CreateObject(object, size, stride);
 }

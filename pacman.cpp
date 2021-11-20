@@ -61,9 +61,7 @@ void Pacman::changeDir() {
 /**
  *  Handles LERP updates
  *
- *  @see      Character:: changeDir();
- *  @see      Character:: checkPellet();
- *  @see      Character:: AIupdateVertice();
+ *  @see Pacman:: changeDir();
  */
 void Pacman::updateLerp() {
     if (lerpProg > 1 || lerpProg < 0) { changeDir(); }
@@ -71,11 +69,10 @@ void Pacman::updateLerp() {
 }
 
 /**
- *  Handles LERP updates
+ *  calls compileshader
  *
- *  @see      Character:: changeDir();
- *  @see      Character:: checkPellet();
- *  @see      Character:: AIupdateVertice();
+ *  @see      Character:: CompileShader(const std::string& vertexShaderSrc,
+                const std::string& fragmentShaderSrc)
  */
 void Pacman::compilePacShader() {
     shaderProgram = CompileShader(  playerVertexShaderSrc,
@@ -95,6 +92,11 @@ void Pacman::updateDir(int outDir) {
     dir = outDir;
 }
 
+/**
+ *  updatesDir with dir from key input
+ * 
+ *  @see     Character::characterAnimate(hMod, wMod, mhMod, mwMod)
+ */
 void Pacman::pacAnimate() {
     if (animFlip) { animVal++; }
     else { animVal--; }
@@ -110,41 +112,38 @@ void Pacman::pacAnimate() {
 }
 
 /**
- *  Returns map value
- *
- *  @return returns if coord is wall or not
+ *  updates cardinal direction
  */
 void Pacman::updateCard(int newDir) {
     cardDir = newDir;
 };
 
 /**
- *  Returns map value
- *
- *  @return returns if coord is wall or not
+ *  gets cardianl direction
  */
 int  Pacman::getCard() {
     return cardDir;
 }
 
 /**
- *  Returns map value
+ *  loads Pacman spritesheet, not used due to first person
  *
- *  @return returns if coord is wall or not
+ *  @see GLuint load_opengl_texture(const std::string& filepath, GLuint slot)
  */
 void Pacman::loadPacSpriteSheet() {
     pacSpriteSheet = load_opengl_texture("assets/pacman.png", 0);
 }
 
 /**
- *  Returns map value
- *
- *  @return returns if coord is wall or not
+ *  Deletes sprite sheet
  */
 void Pacman::deletePacSpriteSheet() {
     glDeleteTextures(1, &pacSpriteSheet);
 }
 
+/**
+ *   updates wheter pellets are to be updated
+ */
 bool Pacman::updatePelletState(bool change) {
     if (change) {
         if (updatePellet) {
@@ -156,6 +155,9 @@ bool Pacman::updatePelletState(bool change) {
     return updatePellet;
 }
 
+/**
+ *  Updates animation delay
+ */
 void Pacman::updateAnimDel(int val, bool set) {
     if (set)    { animDelay = val; }
     else        { animDelay += val; }
@@ -164,9 +166,6 @@ void Pacman::updateAnimDel(int val, bool set) {
 /**
  *  Compiles all verticie lists into a large vector and calls CreateObject
  *
- *  @param itObj - which type of object to iterate, here either Pacman or ghost
- *
- *  @see Character::getVertCoord(int index);
  *  @see GLuint CreateObject(GLfloat* object, int size, const int stride);
  *
  *  @return returns VAO gotten from CreateObject func
@@ -180,22 +179,13 @@ GLuint Pacman::compilePacman() {
     return CreateObject(&veticieList[0], veticieList.size() * sizeof(veticieList[0]), stride);
 }
 
+/**
+ *  Due to there not being a pacman drawn i have simply dropped the draw call
+ *
+ *  @see Pacman::transformPacman()
+ */
 void Pacman::drawPacman() {
-    //setVAO(compilePacman());
-    //GLuint ptexAttrib = glGetAttribLocation(shaderProgram, "pTexcoord");
-    //glEnableVertexAttribArray(ptexAttrib);
-    //glVertexAttribPointer(ptexAttrib, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
-
-    //auto playerTextureLocation = glGetUniformLocation(shaderProgram, "u_PlayerTexture");
-
-    //glUseProgram(shaderProgram);
-
-    //glBindVertexArray(characterVAO);
-    //glUniform1i(playerTextureLocation, 0);
     transformPacman();
-    //CamHolder->applycamera(shaderProgram, WidthHeight.second, WidthHeight.first);
-    //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (const void*)0);
-    //CleanVAO(characterVAO);
 }
 
 /**
@@ -236,14 +226,14 @@ void Pacman::moveCamera(float x, float y) {
 }
 
 /**
- *  Move Camera
+ *  Checks camera for wheter or not a key has been pressed
  *
- *  @param itObj - which type of object to iterate, here either Pacman or ghost
- *
- *  @see Character::getVertCoord(int index);
- *  @see GLuint CreateObject(GLfloat* object, int size, const int stride);
- *
- *  @return returns VAO gotten from CreateObject func
+ *  @see setCard(int card)
+ *  @see Camera::getCard()
+ *  @see Camera::getNewDesDir()
+ *  @see Character::getLegalDir(int dir)
+ *  @see Pacman::updateDir(int outDir)
+ *  @see Pacman::changeDir()
  */
 void Pacman::checkForKeyUpdate() {
     setCard(CamHolder->getCard());

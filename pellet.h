@@ -8,10 +8,6 @@
 
 #include "include.h"
 #include "camera.h"
- /**
-  *  Pellet class used to store data about all pellets, and
-  *  apply functions.
-  */
 
 class Pellet {
 private:

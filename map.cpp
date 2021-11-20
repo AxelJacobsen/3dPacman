@@ -10,6 +10,11 @@
 
 /**
 *  Recieves lvlVect in to Pacman[0]
+* 
+*   @param filePath - map file filepath
+* 
+*   @see Map::mapFloatCreate()
+*   @see Map::loadMapSpriteSheet()
 */
 Map::Map(std::string filePath) {
     // Read from level file;
@@ -40,13 +45,12 @@ Map::Map(std::string filePath) {
 }
 
 /**
- *  Creates map coordinates and initializes all objects
- *
- *  @param *map       - pointer to map vector
- *  @param *mapObje   - pointer to first item in map vector, easier to work with this
+ *  Creates map coordinates
  *
  *  @see GLfloat getCoordsWithInt(int y, int x, int loop);
- *  @see Pellet::checkCoords(int XY);
+ *  @see Map::findWhatWalls(const int x, const int y)
+ *  @see Map::loopOrder(int num)
+ *  @see Map::handleMapTexCoords(int rep)
  */
 void Map::mapFloatCreate() {
     for (int i = 0; i < height; i++) { // creates map
@@ -80,13 +84,10 @@ void Map::mapFloatCreate() {
 }
 
 /**
- *  Handles Ghost spawning
+ *  Handles Map Texture coords
  *
- *  @param y    - y coordinate for coords
- *  @param x    - x coordinate for coords
- *  @param loop - current repitition / desired vertice
+ *  @param rep - tells us what corner needs coords
  *
- *  @return returns float for correct coord
  */
 void Map::handleMapTexCoords(int rep) {
     std::pair <int, int> temp = { 0,0 };
@@ -104,12 +105,10 @@ void Map::handleMapTexCoords(int rep) {
 /**
  *  Finds what wall tile draws a wall
  *
- *  @param itObj - which type of object to iterate, here either Pacman or ghost
+ *  @param x - tile x mapcoord
+ *  @param y - tile y mapcoord
  *
- *  @see Character::getVertCoord(int index);
- *  @see GLuint CreateObject(GLfloat* object, int size, const int stride);
- *
- *  @return returns VAO gotten from CreateObject func
+ *  @return returns number from 1-15 deciding what type of wall is needed
  */
 int Map::findWhatWalls(const int x, const int y) {
     int wallType = 0;
@@ -125,12 +124,9 @@ int Map::findWhatWalls(const int x, const int y) {
 };
 
 /**
- *  Finds what wall tile draws a wall
+ *  Gets number from finwhatwalls and returns ammount of walls that nubmer corresponds to
  *
- *  @param itObj - which type of object to iterate, here either Pacman or ghost
- *
- *  @see Character::getVertCoord(int index);
- *  @see GLuint CreateObject(GLfloat* object, int size, const int stride);
+ *  @param num - wallType
  *
  *  @return returns how many walls are to be drawn
  */
@@ -151,18 +147,17 @@ int Map::howManyWalls(int num) {
 /**
  *  Finds what wall tile draws a wall
  *
- *  @param itObj - which type of object to iterate, here either Pacman or ghost
+ *  @param num - what type of wall
  *
- *  @see Character::getVertCoord(int index);
- *  @see GLuint CreateObject(GLfloat* object, int size, const int stride);
- *
- *  @return returns how many walls are to be drawn
+ *  @return returns float order of walls
+ * 
+ *  not gonna lie, this took time
  */
 std::vector<int> Map::loopOrder(int num) {
     std::pair<int, int> up = { 3, 6 };
     std::pair<int, int> left = { 0, 3 };
-    std::pair<int, int> right = { 0, 9 }; //
-    std::pair<int, int> down = { 6, 9 }; //
+    std::pair<int, int> right = { 0, 9 };   //
+    std::pair<int, int> down = { 6, 9 };    //
     std::vector<int> loopy;
     int rep = 0;
     int push[8] = { 0 };
@@ -201,6 +196,15 @@ std::vector<int> Map::loopOrder(int num) {
     return loopy;
 };
 
+/**
+ *  calls CompileShader for maps shader, also sets map verticie values
+ *
+ *
+ *  @see CompileShader(const std::string& vertexShaderSrc,
+            const std::string& fragmentShaderSrc)
+ *  @see Map::callCreateMapVao()
+ *  
+ */
 void Map::compileMapShader(){
     mapShaderProgram = CompileShader(   mapVertexShaderSrc,
                                         mapFragmentShaderSrc);
@@ -225,10 +229,9 @@ void Map::callCreateMapVao() {
 //  CREATE MAP
 // -----------------------------------------------------------------------------
 /**
- *  Creates map
+ *  Creates map VAO
  *
- *  @param *map       - pointer to map vector
- *  @param *mapObje   - pointer to first item in map vector, easier to work with this
+ *  @param size - size of map to be drawn
  *
  *  @see GLuint getIndices(int out, int mid, int in)
  *
@@ -269,11 +272,20 @@ GLuint Map::CreateMap(float size) {
     return vao;
 }
 
+/**
+ *  Loads texture for map Walls
+ *
+ *  @see load_opengl_texture(const std::string& filepath, GLuint slot)
+ */
 void Map::loadMapSpriteSheet() {
     mapSpriteSheet = load_opengl_texture("assets/wallTexture.png", 2);
 }
 
-
+/**
+ *  Cleans shader, texturesheet & mapVAO
+ *
+ *  @see CleanVAO(GLuint& vao)
+ */
 void Map::cleanMap() {
     glDeleteProgram(mapShaderProgram);
     glDeleteTextures(1, &mapSpriteSheet);
@@ -283,11 +295,9 @@ void Map::cleanMap() {
 /**
  *  Handles Ghost spawning
  *
- *  @param y    - y coordinate for coords
- *  @param x    - x coordinate for coords
- *  @param loop - current repitition / desired vertice
+ *  @param ghostCount - amount of ghost points to be spawned
  *
- *  @return returns float for correct coord
+ *  @return returns floats for pellet index for ghosts
  */
 std::vector<int> Map::spawnGhost(const int ghostCount) {
     time_t t;
@@ -320,6 +330,8 @@ std::vector<int> Map::spawnGhost(const int ghostCount) {
  *
  *  @param shader - shaderprogram to use for drawing
  *  @param vao    - vao of object
+ * 
+ *  @see Camera::applycamera(const GLuint shader, const float width, const float height)
  */
 void Map::drawMap() {
     auto mapTextureLocation = glGetUniformLocation(mapShaderProgram, "u_mapTexture");

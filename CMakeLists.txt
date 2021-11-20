@@ -17,7 +17,7 @@ add_executable(Pacman
 	main.cpp
 	shaders/playerShad.h
 	shaders/mapShad.h
-    	shaders/ghostShad.h
+    shaders/ghostShad.h
 	shaders/pelletsShad.h 
 	shaders/modelShader.h
 	
@@ -38,7 +38,7 @@ add_executable(Pacman
 	"pacman.h"
 	"pacman.cpp"
 	"camera.h"
-	"camera.cpp")
+	"camera.cpp" )
 
 target_link_libraries(Pacman
 	PRIVATE

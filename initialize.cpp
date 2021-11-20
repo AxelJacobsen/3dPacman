@@ -10,7 +10,9 @@
 
 Camera* cameraHolder;
 
-
+/*
+*   Initializes window
+*/
 GLFWwindow* initializeWindow() {
 
     // Initialization of GLFW
@@ -29,6 +31,8 @@ GLFWwindow* initializeWindow() {
     glfwWindowHint(GLFW_SAMPLES, 4);
 
     auto window = glfwCreateWindow(1000, 1000, "Pacman", nullptr, nullptr);
+
+    glfwSetWindowAspectRatio(window, 1000, 1000);
 
     glfwSetKeyCallback(window, key_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
