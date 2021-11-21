@@ -3,6 +3,14 @@
 * Controls:
 - mouse to look around
 - WASD follows the direction you are looking so W will always be forward
+- F for fullscreen
+
+- Quick note:
+The program runs for me and other people i have tested it with, 
+but due to quirks with openGL it is hard to know wheter or not it will properly run for you.
+In case your machine is not powerful enough to run pellets as they are now go into the pelletshader and lower 
+the int "stackCount" to 5 or lower. One of my computers create an unkown graphical bug which ruins the map, this however
+has not shown itself on any other.
 
 * Introduction
 

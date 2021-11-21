@@ -43,7 +43,7 @@ int main(){
     Maps[0]->getMapCameraPointer(cameraAdress);
     Maps[0]->compileMapShader();
     cameraAdress->recieveMap(Maps[0]->getIntMap());
-    printf("Map Loaded\n");
+    //printf("Map Loaded\n");
 
     //Init pacman
     Pacmans.push_back(new Pacman(Maps[0]->getPacSpawnPoint(), XYshift));
@@ -52,7 +52,7 @@ int main(){
     Pacmans[0]->setXYshift(XYshift);
     Pacmans[0]->getCameraPointer(cameraAdress);
     Pacmans[0]->setVAO(Pacmans[0]->compilePacman());
-    printf("Pacman Loaded\n");
+    //printf("Pacman Loaded\n");
 
     //Init pellets
     std::pair<int, int> WidthHeight = Maps[0]->getWidthHeight();
@@ -81,7 +81,7 @@ int main(){
         std::pair<int, int> tempXY = pIT->getPelletXY();
         pelletMap[tempXY.second][tempXY.first] = pIT;
     }
-    printf("Pellet Loaded\n");
+    //printf("Pellet Loaded\n");
 
     //spawn ghosts
     int ghostAmount = 5;
@@ -101,13 +101,14 @@ int main(){
         }
         Ghosts[0]->callLoadModel();
         Ghosts[0]->compileGhostModelShader();
+        Ghosts[0]->loadGhostSpriteSheet();
         int insurance = 0;
         for (auto& initializeAllGhosts : Ghosts) {
             if (insurance != 0) {
                 initializeAllGhosts->setShader(Ghosts[0]->getShader());
                 initializeAllGhosts->setVAO(Ghosts[0]->getVAO());
                 initializeAllGhosts->setModelSize(Ghosts[0]->getModelSize());
-                printf("Ghost Loaded: %i\n", insurance);
+                //printf("Ghost Loaded: %i\n", insurance);
             }
             insurance++;
         }

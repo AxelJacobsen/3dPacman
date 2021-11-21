@@ -62,6 +62,7 @@ public:
         std::pair<GLuint, int> VAOsize = LoadModel("assets/model/ghost", "/ghostModel.obj");
         characterVAO = VAOsize.first; modelSize = VAOsize.second;
     };
+    void loadGhostSpriteSheet();
     std::pair<GLuint, int> LoadModel(const std::string path, const std::string objID);
     void Light(
         const GLuint shaderprogram,

@@ -68,3 +68,9 @@ target_compile_definitions(${PROJECT_NAME}
   COMMAND ${CMAKE_COMMAND} -E copy
   ${CMAKE_SOURCE_DIR}/assets/wallTexture.png
   ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets/wallTexture.png)
+
+      add_custom_command(
+  TARGET ${PROJECT_NAME} POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy
+  ${CMAKE_SOURCE_DIR}/assets/ghostModelShader.png
+  ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets/ghostModelShader.png)

@@ -75,6 +75,11 @@ void Ghost::updateLerp() {
 void Ghost::compileGhostModelShader() {
     shaderProgram = CompileShader(  VertexShaderSrc,
                                     directionalLightFragmentShaderSrc);
+
+    GLuint modtexAttrib = glGetAttribLocation(shaderProgram, "modTexcoord");
+    glEnableVertexAttribArray(modtexAttrib);
+    glVertexAttribPointer(modtexAttrib, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
+
 }
 
 /**
@@ -223,6 +228,10 @@ void Ghost::drawGhostsAsModels(float currentTime, std::pair<int,int> WH) {
     auto vertexColorLocation = glGetUniformLocation(shaderProgram, "u_Color");
     glUniform4f(vertexColorLocation, 0.8f, 0.2f, 0.2f, 1.0f);
 
+    auto modelTextureLocation = glGetUniformLocation(shaderProgram, "u_modelTexture");
+    glUseProgram(shaderProgram);
+    glUniform1i(modelTextureLocation, 1);
+
     CamHolder->applycamera(shaderProgram, WH.second, WH.first);
     transformGhost(shaderProgram, currentTime);
     Light(shaderProgram);
@@ -339,6 +348,15 @@ void Ghost::transformGhost(GLuint shaderProg, float currentTime){
     if (transformationmat != -1)
 
     glUniformMatrix4fv(transformationmat, 1, false, glm::value_ptr(transformation));
+}
+
+/**
+ *  loads Ghost sprite, just used to add soem texture to the ghosts
+ *
+ *  @see GLuint load_opengl_texture(const std::string& filepath, GLuint slot)
+ */
+void Ghost::loadGhostSpriteSheet() {
+   textureSheet = load_opengl_texture("assets/ghostModelShader.png", 1);
 }
 
 // -----------------------------------------------------------------------------
