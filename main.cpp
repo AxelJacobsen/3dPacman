@@ -38,7 +38,7 @@ int main(){
     if (window == nullptr) { return EXIT_FAILURE; }
 
     //Init map
-    Maps.push_back(new Map("../../../../levels/level0"));
+    Maps.push_back(new Map("../../levels/level0"));
     std::pair<float, float>XYshift = Maps[0]->getXYshift();
     Maps[0]->getMapCameraPointer(cameraAdress);
     Maps[0]->compileMapShader();
