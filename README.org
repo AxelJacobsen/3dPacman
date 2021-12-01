@@ -1,11 +1,33 @@
 #+TITLE: Evaluation Assignment 2
 
-It looks to me that the illumination is applied to the ghosts, but it does not look to be working correctly. The rest of the features are ok.
+It looks to me that the illumination is applied to the ghosts, but it does not
+look to be working correctly. The rest of the features are ok.
 
-Your approach to rendering is ok on efficiency, but could have been improved by the use of face culling and instancing.
+Your approach to rendering is efficient.
 
 Your C++ implementation is ok. There is a memory issue: in pellets you try to
-delete stack-allocated memory, which should make your app crash; however it does
-not crash because you don't delete the pellets (having memory leaks).
+delete stack-allocated memory:
+
+#+begin_src
+~Pellet() {
+    delete vertices; //Not allocated with 'new'. Cannot be subject to 'delete'
+    delete XYpos;    //Not allocated with 'new'. Cannot be subject to 'delete'
+ };
+#+end_src
+
+which should make your app crash; however it does not crash because you don't
+delete the pellets (having memory leaks). For instance, for all these =new=:
+
+#+begin_src txt
+File: main.cpp
+  33  28     Camera* cameraAdress = new Camera();
+  41  20     Maps.push_back(new Map("../../levels/level0"));
+  49  23     Pacmans.push_back(new Pacman(Maps[0]->getPacSpawnPoint(), XYshift));
+  61  68             if (Maps[0]->getMapVal(x, y) == 0) { Pellets.push_back(new Pellet(x, y, XYshift)); }
+  95  38                     Ghosts.push_back(new Ghost(it->checkCoords(0), it->checkCoords(1), true, WidthHeight, XYshift, cameraAdress));
+#+end_src
+
+there is no =delete= counterpart. Therefore, you are leaking memory.
+
 
 My evaluation of this work is *B*.
